@@ -40,8 +40,12 @@ typedef struct RopeNode {
 bool is_leaf(RopeNode *node);
 int node_height(RopeNode *node);
 int string_length(char *str);
+int count_newlines(char *str);
 void update_metadata(RopeNode *node);
 void print_text(RopeNode *node);
+
+// Rope functions
+RopeNode *create_leaf(char *text);
 
 
 
@@ -76,6 +80,21 @@ int string_length(char *str) {
 		return 0;  // returns 0 if node is NULL
 }
 
+// Returns the number '\n's in a string
+int count_newlines(char *str) {
+	// Edge case when str is NULL
+	if (str == NULL)
+		return 0;
+
+	// Iteratively count the '\n's
+	int count = 0;
+	for (int i = 0; str[i] != '\0'; i++)
+		if (str[i] == '\n')
+			count++;
+
+	return count;
+}
+
 
 // Recomputes total_len, weight, height and newlines
 void update_metadata(RopeNode *node) {
@@ -90,13 +109,7 @@ void update_metadata(RopeNode *node) {
 
 		node->height = 1;  // height of a leaf node is 1
 
-		// Iteratively search through the string to count newlines
-		node->newlines = 0;
-		if (node->str != NULL) {
-			for (int i = 0; (node->str)[i] != '\0'; i++)
-				if ((node->str)[i] == '\n')
-					(node->newlines)++;
-		}
+		node->newlines = count_newlines(node->str);  // calculates the count of newlines in node->str
 	}
 
 	// CASE 2: node = internal node
@@ -127,7 +140,7 @@ void print_text(RopeNode *node) {
 	// Return void if node is NULL
 	if (node == NULL)
 		return;
-	
+
 	// CASE 1: node = leaf node
 	if (is_leaf(node))
 		printf("%s", node->str);
@@ -139,6 +152,20 @@ void print_text(RopeNode *node) {
 	}
 }
 
+
+// Allocates a new rope node, sets metadata and returns it
+RopeNode *create_leaf(char *text) {
+	RopeNode *node = calloc(1, sizeof(RopeNode));	
+
+	// Set metadata
+	node->str = strdup(text);  // allocates & copies text into node->str
+	node->height = 1;
+	node->total_len = string_length(text);
+	node->weight = node->total_len;
+	node->newlines = count_newlines(text);
+
+	return node;
+}
 
 
 
