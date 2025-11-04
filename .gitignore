@@ -11,5 +11,5 @@ tim
 *.~
 .vscode/
 
-# Debug Files
-*.gdb
+# Test Files
+*.txt

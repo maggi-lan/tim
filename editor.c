@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define CHUNK_SIZE 64
 
 
 // NOTE: There are two types of nodes here: internal nodes & leaf nodes
@@ -42,10 +43,13 @@ int node_height(RopeNode *node);
 int string_length(char *str);
 int count_newlines(char *str);
 void update_metadata(RopeNode *node);
+char *string_copy(const char *src);
 void print_text(RopeNode *node);
 
 // Rope functions
 RopeNode *create_leaf(char *text);
+RopeNode *concat(RopeNode *left, RopeNode *right);
+RopeNode *load_file(char *filename);
 
 
 
@@ -134,6 +138,15 @@ void update_metadata(RopeNode *node) {
 }
 
 
+// Allocates memory for a string and copies the input to it
+char *string_copy(const char *src) {
+    char *dst = malloc(strlen (src) + 1);  // Space for length plus nul
+    if (dst == NULL) return NULL;          // No memory
+    strcpy(dst, src);                      // Copy the characters
+    return dst;                            // Return the new string
+}
+
+
 // Prints all the text in a rope using recursion
 // Useful for debugging
 void print_text(RopeNode *node) {
@@ -158,7 +171,7 @@ RopeNode *create_leaf(char *text) {
 	RopeNode *node = calloc(1, sizeof(RopeNode));	
 
 	// Set metadata
-	node->str = strdup(text);  // allocates & copies text into node->str
+	node->str = string_copy(text);  // allocates & copies text into node->str
 	node->height = 1;
 	node->total_len = string_length(text);
 	node->weight = node->total_len;
@@ -168,7 +181,62 @@ RopeNode *create_leaf(char *text) {
 }
 
 
+// Combines two nodes
+RopeNode *concat(RopeNode *left, RopeNode *right) {
+	// Edge cases
+	if (left == NULL)
+		return right;
+	if (right == NULL)
+		return left;
+
+	// Create an internal node whose children would be left & right
+	RopeNode *node = calloc(1, sizeof(RopeNode));
+	node->left = left;
+	node->right = right;
+	update_metadata(node);
+
+	// Set the parent pointers of left & right
+	left->parent = node;
+	right->parent = node;
+
+	return node;
+}
+
+
+RopeNode *load_file(char *filename) {
+	FILE *fp = fopen(filename, "r");  // open the file in read mode
+	if (!fp) {
+        perror("Error opening file");
+        return NULL;
+    }
+
+    RopeNode *root = NULL;        // root of the whole rope
+    char buffer[CHUNK_SIZE + 1];  // buffer to read chunks (of fixed size) from the file
+
+	// Read till EOF
+    while (!feof(fp)) {
+        size_t n = fread(buffer, 1, CHUNK_SIZE, fp);  // load a chunk of text from the file to buffer
+        buffer[n] = '\0';                             // terminate with null character
+
+        RopeNode *leaf = create_leaf(buffer);  // create a leaf with the buffer
+        root = concat(root, leaf);             // concatenate the new leaf with root
+		// NOTE: This is not balanced yet
+    }
+
+    fclose(fp);
+    return root;
+}
+
+
+
 
 int main(int argc, char **argv) {
+	if (argc != 2) {
+		printf("Incorrect usage\nTry: ./tim <file>\n");
+		return 1;
+	}
+
+	RopeNode *root = load_file(argv[1]);
+	print_text(root);
 	return 0;
 }
