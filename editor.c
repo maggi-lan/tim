@@ -8,15 +8,18 @@
 
 // NOTE: There are two types of nodes here: internal nodes & leaf nodes
 typedef struct RopeNode {
-	int weight;    // length of text in left subtree (in internal nodes) or length of string in node (in leaf nodes)
-	char *str;     // only for leaf nodes
-	int height;    // for AVL rotations
-	int newlines;  // count of '\n's in subtree (used by the text cursor)
+	int weight;     // length of text in left subtree (in internal nodes) or length of string in node (in leaf nodes)
+	int total_len;  // total number of characters under the whole subtree
+	char *str;      // only for leaf nodes
+	int height;     // for AVL rotations
+	int newlines;   // count of '\n's in subtree (used by the text cursor)
 
 	struct RopeNode *left;
 	struct RopeNode *right;
 	struct RopeNode *parent;
 } RopeNode;
+
+// NOTE: weight is used for indexing while total_len helps us to calculate weights
 
 /*
 # LEAF NODES
@@ -37,7 +40,6 @@ typedef struct RopeNode {
 bool is_leaf(RopeNode *node);
 int node_height(RopeNode *node);
 int string_length(char *str);
-int calculate_weight(RopeNode *node);
 void update_metadata(RopeNode *node);
 void print_text(RopeNode *node);
 
@@ -68,61 +70,48 @@ int node_height(RopeNode *node) {
 
 
 int string_length(char *str) {
-	if (str == NULL)
-		return 0;
+	if (str != NULL)
+		return strlen(str);
 	else
-		return string_length(str);
+		return 0;  // returns 0 if node is NULL
 }
 
 
-// Re-calculates the height and returns it
-int calculate_weight(RopeNode *node) {
-	// Edge case where weight of node is NULL
-	if (node == NULL)
-		return 0;
-
-	// For an internal node, sum weights along the right spine of node->left
-	if (!is_leaf(node)) {
-		int weight = 0;
-		RopeNode *temp = node->left;
-
-		while (temp != NULL) {
-			weight += temp->weight;
-			temp = temp->right;
-		}
-
-		return weight;
-	}
-  	// Weight of a leaf node is the length of the string it holds
-	else
-		return string_length(node->str);
-}
-
-
-// Recomputes weight, height and newlines
+// Recomputes total_len, weight, height and newlines
 void update_metadata(RopeNode *node) {
 	// Edge case when node is NULL
 	if (node == NULL)
 		return;
 
-	node->weight = calculate_weight(node);  // calculates the weight
-
 	// CASE 1: node = leaf node
 	if (is_leaf(node)) {
+		node->total_len = string_length(node->str);
+		node->weight = node->total_len;  // weight of a leaf node = strlen(node->str)
+
 		node->height = 1;  // height of a leaf node is 1
 
 		// Iteratively search through the string to count newlines
 		node->newlines = 0;
-		for (int i = 0; (node->str)[i] != '\0'; i++)
-			if ((node->str)[i] == '\n')
-				(node->newlines)++;
+		if (node->str != NULL) {
+			for (int i = 0; (node->str)[i] != '\0'; i++)
+				if ((node->str)[i] == '\n')
+					(node->newlines)++;
+		}
 	}
 
 	// CASE 2: node = internal node
 	else {
+		// total_len of internal node = sum of total_len of left & right nodes
+		int left_len = node->left ? node->left->total_len : 0;
+		int right_len = node->right ? node->right->total_len : 0;
+		node->total_len = left_len + right_len;
+
+		node->weight = left_len;  // Weight of internal node = total length of characters in the left subtree
+
 		// Calculates the height based on the heights of the node's children
 		node->height = 1 + MAX(node_height(node->left), node_height(node->right));
 
+		// newline = sum of number of newlines in left & right nodes
 		node->newlines = 0;
 		if (node->left)
 			node->newlines += node->left->newlines;
