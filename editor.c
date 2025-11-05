@@ -55,6 +55,7 @@ RopeNode *load_file(char *filename);
 int get_skew(RopeNode *node);
 RopeNode *rotate_right(RopeNode *node);
 RopeNode *rotate_left(RopeNode *node);
+RopeNode *rebalance(RopeNode *node);
 
 
 
@@ -225,7 +226,7 @@ RopeNode *concat(RopeNode *left, RopeNode *right) {
 // Loads the file into a rope
 RopeNode *load_file(char *filename) {
 	FILE *fp = fopen(filename, "r");  // open the file in read mode
-	// Error Handling
+	// Error handling
 	if (!fp) {
         perror("Error opening file");
         return NULL;
@@ -239,8 +240,7 @@ RopeNode *load_file(char *filename) {
 	while ((n = fread(buffer, 1, CHUNK_SIZE, fp)) > 0) {  // fread() returns the number of characters that were read
 		buffer[n] = '\0';                                 // terminate buffer with null character
 		RopeNode *leaf = create_leaf(buffer);             // create a leaf with the buffer
-		root = concat(root, leaf);                        // concatenate the new leaf with root
-		// NOTE: This is not balanced yet
+		root = rebalance(concat(root, leaf));             // concatenate the new leaf with root
     }
 
     fclose(fp);
@@ -250,7 +250,11 @@ RopeNode *load_file(char *filename) {
 
 // Returns the height difference between left and right children of a node
 int get_skew(RopeNode *node) {
-	return node_height(node->left) - node_height(node->right);
+	// Edge case: node is NULL
+	if (node == NULL)
+		return 0;
+
+	return node_height(node->right) - node_height(node->left);
 }
 
 
@@ -373,6 +377,42 @@ RopeNode *rotate_left(RopeNode *node) {
 		update_metadata(ancestor);
 
 	return y;
+}
+
+
+// Performs AVL balancing and returns the root of the subtree on which the balancing is done on
+RopeNode *rebalance(RopeNode *node) {
+	// Edge case: node is NULL
+	if (node == NULL)
+		return NULL;
+
+	update_metadata(node);
+	int skew = get_skew(node);  // no need to rebalance if skew is either -1, 0 or 1
+
+	// If right side is heavier
+	if (skew == 2) {
+		int right_skew = get_skew(node->right);
+		if (right_skew == 1 || right_skew == 0)
+			return rotate_left(node);
+		else if (right_skew == -1) {
+			rotate_right(node->right);
+			return rotate_left(node);
+		}
+	}
+
+	// If left side is heavier
+	else if (skew == -2) {
+		int left_skew = get_skew(node->left);
+		if (left_skew == -1 || left_skew == 0)
+			return rotate_right(node);
+		else if (left_skew == 1) {
+			rotate_left(node->left);
+			return rotate_right(node);
+		}
+	}
+
+	// If skew = -1, 0, 1 or anything else
+	return node;
 }
 
 
