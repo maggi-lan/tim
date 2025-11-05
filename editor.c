@@ -109,9 +109,9 @@ void update_metadata(RopeNode *node) {
 	// CASE 1: node = leaf node
 	if (is_leaf(node)) {
 		node->total_len = string_length(node->str);
-		node->weight = node->total_len;  // weight of a leaf node = strlen(node->str)
+		node->weight = node->total_len;              // weight of a leaf node = strlen(node->str)
 
-		node->height = 1;  // height of a leaf node is 1
+		node->height = 1;                            // height of a leaf node is 1
 
 		node->newlines = count_newlines(node->str);  // calculates the count of newlines in node->str
 	}
@@ -141,7 +141,12 @@ void update_metadata(RopeNode *node) {
 // Allocates memory for a string and copies the input to it
 char *string_copy(const char *src) {
     char *dst = malloc(strlen (src) + 1);  // Space for length plus nul
-    if (dst == NULL) return NULL;          // No memory
+	// If malloc fails
+    if (dst == NULL) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+
     strcpy(dst, src);                      // Copy the characters
     return dst;                            // Return the new string
 }
@@ -169,13 +174,15 @@ void print_text(RopeNode *node) {
 // Allocates a new rope node, sets metadata and returns it
 RopeNode *create_leaf(char *text) {
 	RopeNode *node = calloc(1, sizeof(RopeNode));	
+	// If calloc fails
+	if (node == NULL) {
+		perror("calloc");
+		exit(EXIT_FAILURE);
+	}
 
 	// Set metadata
 	node->str = string_copy(text);  // allocates & copies text into node->str
-	node->height = 1;
-	node->total_len = string_length(text);
-	node->weight = node->total_len;
-	node->newlines = count_newlines(text);
+	update_metadata(node);          // update the metadata of the node
 
 	return node;
 }
@@ -191,6 +198,13 @@ RopeNode *concat(RopeNode *left, RopeNode *right) {
 
 	// Create an internal node whose children would be left & right
 	RopeNode *node = calloc(1, sizeof(RopeNode));
+	// If calloc fails
+	if (node == NULL) {
+		perror("calloc");
+		exit(EXIT_FAILURE);
+	}
+
+	// Update the parent node
 	node->left = left;
 	node->right = right;
 	update_metadata(node);
@@ -203,23 +217,24 @@ RopeNode *concat(RopeNode *left, RopeNode *right) {
 }
 
 
+// Loads the file into a rope
 RopeNode *load_file(char *filename) {
 	FILE *fp = fopen(filename, "r");  // open the file in read mode
+	// Error Handling
 	if (!fp) {
         perror("Error opening file");
         return NULL;
     }
 
-    RopeNode *root = NULL;        // root of the whole rope
-    char buffer[CHUNK_SIZE + 1];  // buffer to read chunks (of fixed size) from the file
+    RopeNode *root = NULL;              // root of the whole rope
+    char buffer[CHUNK_SIZE + 1] = {0};  // buffer to read chunks (of fixed size) from the file
 
-	// Read till EOF
-    while (!feof(fp)) {
-        size_t n = fread(buffer, 1, CHUNK_SIZE, fp);  // load a chunk of text from the file to buffer
-        buffer[n] = '\0';                             // terminate with null character
-
-        RopeNode *leaf = create_leaf(buffer);  // create a leaf with the buffer
-        root = concat(root, leaf);             // concatenate the new leaf with root
+	// Read the file in chunks [fread() loads the chunk of text into buffer]
+	int n;
+	while ((n = fread(buffer, 1, CHUNK_SIZE, fp)) > 0) {  // fread() returns the number of characters that were read
+		buffer[n] = '\0';                                 // terminate buffer with null character
+		RopeNode *leaf = create_leaf(buffer);             // create a leaf with the buffer
+		root = concat(root, leaf);                        // concatenate the new leaf with root
 		// NOTE: This is not balanced yet
     }
 
