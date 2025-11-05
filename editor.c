@@ -51,6 +51,11 @@ RopeNode *create_leaf(char *text);
 RopeNode *concat(RopeNode *left, RopeNode *right);
 RopeNode *load_file(char *filename);
 
+// AVL balancing
+int get_skew(RopeNode *node);
+RopeNode *rotate_right(RopeNode *node);
+RopeNode *rotate_left(RopeNode *node);
+
 
 
 
@@ -240,6 +245,134 @@ RopeNode *load_file(char *filename) {
 
     fclose(fp);
     return root;
+}
+
+
+// Returns the height difference between left and right children of a node
+int get_skew(RopeNode *node) {
+	return node_height(node->left) - node_height(node->right);
+}
+
+
+// Performs a right rotation and returns the root of the rotation
+RopeNode *rotate_right(RopeNode *node) {
+	/*
+	# initially:
+         y
+        / \
+       x  [C]
+      / \
+    [A] [B]
+
+	# after right-rotation:
+         x
+        / \
+      [A]  y
+          / \
+        [B] [C]
+	*/
+
+	// Edge case: y is NULL or x is NULL
+	if (node == NULL || node->left == NULL)
+		return NULL;
+
+	RopeNode *y = node;
+	RopeNode *x = y->left;
+	RopeNode *A = x->left;
+	RopeNode *B = x->right;
+	RopeNode *C = y->right;
+
+	// Shift the parent of y to become the parent of x
+	RopeNode *parent = node->parent;
+	y->parent = NULL;
+	x->parent = parent;
+	if (parent != NULL) {
+		if (parent->left == y)
+			parent->left = x;
+		else
+			parent->right = x;
+	}
+
+	// Shift y to be the right child of x
+	x->right = y;
+	y->parent = x;
+
+	// Move B
+	if (B != NULL) {
+		y->left = B;
+		B->parent = y;
+	}
+
+	// Update height, weight, total_len and newlines for x & y
+	update_metadata(y);
+	update_metadata(x);
+
+	// Update height, weight, total_len and newlines for all the ancestors
+	for (RopeNode *ancestor = parent; ancestor != NULL; ancestor = ancestor->parent)
+		update_metadata(ancestor);
+
+	return x;
+}
+
+
+// Performs a left rotation and returns the root of the rotation
+RopeNode *rotate_left(RopeNode *node) {
+	/*
+	# initially:
+         x
+        / \
+      [A]  y
+          / \
+        [B] [C]
+
+	# after left-rotation:
+         y
+        / \
+       x  [C]
+      / \
+    [A] [B]
+	*/
+
+	// Edge case: x is NULL or y is NULL
+	if (node == NULL || node->right == NULL)
+		return NULL;
+
+	RopeNode *x = node;
+	RopeNode *y = x->right;
+	RopeNode *A = x->left;
+	RopeNode *B = y->left;
+	RopeNode *C = y->right;
+
+	// Shift the parent of x to become the parent of y
+	RopeNode *parent = node->parent;
+	x->parent = NULL;
+	y->parent = parent;
+	if (parent != NULL) {
+		if (parent->left == x)
+			parent->left = y;
+		else
+			parent->right = y;
+	}
+
+	// Shift x to be the left child of y
+	y->left = x;
+	x->parent = y;
+
+	// Move B
+	if (B != NULL) {
+		x->right = B;
+		B->parent = x;
+	}
+
+	// Update height, weight, total_len and newlines for x & y
+	update_metadata(x);
+	update_metadata(y);
+
+	// Update height, weight, total_len and newlines for all the ancestors
+	for (RopeNode *ancestor = parent; ancestor != NULL; ancestor = ancestor->parent)
+		update_metadata(ancestor);
+
+	return y;
 }
 
 
