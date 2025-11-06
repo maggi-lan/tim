@@ -49,6 +49,7 @@ void print_text(RopeNode *node);
 // Rope functions
 RopeNode *create_leaf(char *text);
 RopeNode *concat(RopeNode *left, RopeNode *right);
+RopeNode *append_node(RopeNode *root, RopeNode *leaf);
 RopeNode *load_file(char *filename);
 
 // AVL balancing
@@ -223,6 +224,43 @@ RopeNode *concat(RopeNode *left, RopeNode *right) {
 }
 
 
+// Inserts leaves at the right most internal node (basically appending the leaf to the tree)
+RopeNode *append_node(RopeNode *root, RopeNode *leaf) {
+	// Appending to empty tree
+	if (root == NULL)
+		root = leaf;
+
+	else {
+		// If tree has only one leaf
+		if (is_leaf(root))
+			root = concat(root, leaf);  // root concatenates two leaves
+
+		// If tree has internal nodes
+		else {
+			// Trying to set right_most = right most internal node
+			RopeNode *right_most = root;
+			while (!is_leaf(right_most->right))
+				right_most = right_most->right;
+
+			// new_node concatenates two leaves and becomes the right child of right_most
+			RopeNode *new_node = concat(right_most->right, leaf);
+			right_most->right = new_node;
+			new_node->parent = right_most;
+
+			// Rebalance iteratively from bottom to up
+			for (RopeNode *node = new_node; node != NULL; node = node->parent) {
+				if (node->parent == NULL)
+					root = rebalance(node);
+				else
+					rebalance(node);
+			}
+		}
+	}
+
+	return root;
+}
+
+
 // Loads the file into a rope
 RopeNode *load_file(char *filename) {
 	FILE *fp = fopen(filename, "r");  // open the file in read mode
@@ -240,35 +278,7 @@ RopeNode *load_file(char *filename) {
 	while ((n = fread(buffer, 1, CHUNK_SIZE, fp)) > 0) {  // fread() returns the number of characters that were read
 		buffer[n] = '\0';                                 // terminate buffer with null character
 		RopeNode *leaf = create_leaf(buffer);             // create a leaf with the buffer
-
-		// Insert the new leaf at the right most internal node (basically appending the leaf to the tree)
-		RopeNode *right = root;
-		if (root == NULL)                             // appending to empty tree
-			root = leaf;
-		else {
-			if (is_leaf(root))                        // if tree has only one leaf
-				root = concat(root, leaf);            // root concatenates two leaves
-
-			else {                                    // if tree has internal nodes
-				// Trying to set right_most = right most internal node
-				RopeNode *right_most = root;
-				while (!is_leaf(right_most->right))
-					right_most = right_most->right;
-
-				// new_node concatenates two leaves and becomes the right child of right_most
-				RopeNode *new_node = concat(right_most->right, leaf);
-				right_most->right = new_node;
-				new_node->parent = right_most;
-
-				// Rebalance iteratively from bottom to up
-				for (RopeNode *node = new_node; node != NULL; node = node->parent) {
-					if (node->parent == NULL)
-						root = rebalance(node);
-					else
-						rebalance(node);
-				}
-			}
-		}
+		root = append_node(root, leaf);                   // append the leaf to the tree
     }
 
     fclose(fp);
@@ -406,17 +416,21 @@ RopeNode *rebalance(RopeNode *node) {
 	if (node == NULL)
 		return NULL;
 
-	update_metadata(node);
+	update_metadata(node);      // update node meta data before proceeding
 	int skew = get_skew(node);  // no need to rebalance if skew is either -1, 0 or 1
 
 	// If right side is heavier
 	if (skew == 2) {
-		int right_skew = get_skew(node->right);
+		int right_skew = get_skew(node->right);  // right_skew = skew of the right node
+
+		// CASE 1: right_skew > -1: one left rotation on the root node
 		if (right_skew == 1 || right_skew == 0) {
 			RopeNode *result = rotate_left(node);
 			update_metadata(result);
 			return result;
 		}
+
+		// CASE 2: right_skew = -1: one right rotation on the right node + one left rotation on the root node
 		else if (right_skew == -1) {
 			update_metadata(rotate_right(node->right));
 			RopeNode *result = rotate_left(node);
@@ -428,11 +442,15 @@ RopeNode *rebalance(RopeNode *node) {
 	// If left side is heavier
 	else if (skew == -2) {
 		int left_skew = get_skew(node->left);
+
+		// CASE 1: left_skew < 1: one right rotation on the root node
 		if (left_skew == -1 || left_skew == 0) {
 			RopeNode *result = rotate_right(node);
 			update_metadata(result);
 			return result;
 		}
+
+		// CASE 2: left_skew = 1: one left rotation on the left node + one right rotation on the root node
 		else if (left_skew == 1) {
 			update_metadata(rotate_left(node->left));
 			RopeNode *result = rotate_right(node);
