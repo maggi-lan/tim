@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define CHUNK_SIZE 64
+#define CHUNK_SIZE 2
 
 
 // NOTE: There are two types of nodes here: internal nodes & leaf nodes
@@ -58,6 +58,9 @@ RopeNode *rotate_right(RopeNode *node);
 RopeNode *rotate_left(RopeNode *node);
 RopeNode *rebalance(RopeNode *node);
 
+// Debug helpers
+void print_tree(RopeNode *root);
+void print_tree_rec(RopeNode *node, int depth, char branch);
 
 
 
@@ -246,6 +249,7 @@ RopeNode *append_node(RopeNode *root, RopeNode *leaf) {
 			RopeNode *new_node = concat(right_most->right, leaf);
 			right_most->right = new_node;
 			new_node->parent = right_most;
+			update_metadata(right_most);
 
 			// Rebalance iteratively from bottom to up
 			for (RopeNode *node = new_node; node != NULL; node = node->parent) {
@@ -464,6 +468,58 @@ RopeNode *rebalance(RopeNode *node) {
 }
 
 
+// Prints the tree structure
+// Useful for debugging
+void print_tree(RopeNode *root) {
+	printf("\n========== ROPE TREE DUMP ==========\n");
+	if (root == NULL)
+		printf("(empty tree)\n");
+	else
+		print_tree_rec(root, 0, '*');
+	printf("====================================\n\n");
+}
+
+
+// Recursive helper function for print_tree()
+void print_tree_rec(RopeNode *node, int depth, char branch) {
+	if (node == NULL)
+		return;
+
+	// Indentation based on depth
+	for (int i = 0; i < depth; i++)
+		printf("    ");
+
+	// Print branch direction (root = '*')
+	if (depth == 0)
+		printf("* ");
+	else if (branch == 'L')
+		printf("L── ");
+	else if (branch == 'R')
+		printf("R── ");
+
+	// Print node metadata
+	printf("[%p] h=%d w=%d len=%d nl=%d ",
+		   (void *)node, node->height, node->weight, node->total_len, node->newlines);
+
+	// Leaf preview
+	if (node->str != NULL) {
+		printf("leaf=\"");
+		for (int i = 0; i < 20 && node->str[i] != '\0'; i++)
+			putchar(node->str[i]);
+		if (node->str[20] != '\0')
+			printf("...");
+		printf("\" ");
+	}
+
+	// Parent pointer
+	printf(" parent=%p\n", (void *)node->parent);
+
+	// Recursive printing
+	print_tree_rec(node->left,  depth + 1, 'L');
+	print_tree_rec(node->right, depth + 1, 'R');
+}
+
+
 
 
 int main(int argc, char **argv) {
@@ -473,6 +529,9 @@ int main(int argc, char **argv) {
 	}
 
 	RopeNode *root = load_file(argv[1]);
+
 	print_text(root);
+
+	print_tree(root);
 	return 0;
 }
