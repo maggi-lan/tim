@@ -240,7 +240,35 @@ RopeNode *load_file(char *filename) {
 	while ((n = fread(buffer, 1, CHUNK_SIZE, fp)) > 0) {  // fread() returns the number of characters that were read
 		buffer[n] = '\0';                                 // terminate buffer with null character
 		RopeNode *leaf = create_leaf(buffer);             // create a leaf with the buffer
-		root = rebalance(concat(root, leaf));             // concatenate the new leaf with root
+
+		// Insert the new leaf at the right most internal node (basically appending the leaf to the tree)
+		RopeNode *right = root;
+		if (root == NULL)                             // appending to empty tree
+			root = leaf;
+		else {
+			if (is_leaf(root))                        // if tree has only one leaf
+				root = concat(root, leaf);            // root concatenates two leaves
+
+			else {                                    // if tree has internal nodes
+				// Trying to set right_most = right most internal node
+				RopeNode *right_most = root;
+				while (!is_leaf(right_most->right))
+					right_most = right_most->right;
+
+				// new_node concatenates two leaves and becomes the right child of right_most
+				RopeNode *new_node = concat(right_most->right, leaf);
+				right_most->right = new_node;
+				new_node->parent = right_most;
+
+				// Rebalance iteratively from bottom to up
+				for (RopeNode *node = new_node; node != NULL; node = node->parent) {
+					if (node->parent == NULL)
+						root = rebalance(node);
+					else
+						rebalance(node);
+				}
+			}
+		}
     }
 
     fclose(fp);
@@ -311,10 +339,6 @@ RopeNode *rotate_right(RopeNode *node) {
 	update_metadata(y);
 	update_metadata(x);
 
-	// Update height, weight, total_len and newlines for all the ancestors
-	for (RopeNode *ancestor = parent; ancestor != NULL; ancestor = ancestor->parent)
-		update_metadata(ancestor);
-
 	return x;
 }
 
@@ -372,10 +396,6 @@ RopeNode *rotate_left(RopeNode *node) {
 	update_metadata(x);
 	update_metadata(y);
 
-	// Update height, weight, total_len and newlines for all the ancestors
-	for (RopeNode *ancestor = parent; ancestor != NULL; ancestor = ancestor->parent)
-		update_metadata(ancestor);
-
 	return y;
 }
 
@@ -392,22 +412,32 @@ RopeNode *rebalance(RopeNode *node) {
 	// If right side is heavier
 	if (skew == 2) {
 		int right_skew = get_skew(node->right);
-		if (right_skew == 1 || right_skew == 0)
-			return rotate_left(node);
+		if (right_skew == 1 || right_skew == 0) {
+			RopeNode *result = rotate_left(node);
+			update_metadata(result);
+			return result;
+		}
 		else if (right_skew == -1) {
-			rotate_right(node->right);
-			return rotate_left(node);
+			update_metadata(rotate_right(node->right));
+			RopeNode *result = rotate_left(node);
+			update_metadata(result);
+			return result;
 		}
 	}
 
 	// If left side is heavier
 	else if (skew == -2) {
 		int left_skew = get_skew(node->left);
-		if (left_skew == -1 || left_skew == 0)
-			return rotate_right(node);
+		if (left_skew == -1 || left_skew == 0) {
+			RopeNode *result = rotate_right(node);
+			update_metadata(result);
+			return result;
+		}
 		else if (left_skew == 1) {
-			rotate_left(node->left);
-			return rotate_right(node);
+			update_metadata(rotate_left(node->left));
+			RopeNode *result = rotate_right(node);
+			update_metadata(result);
+			return result;
 		}
 	}
 
