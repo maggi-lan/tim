@@ -49,7 +49,6 @@ void print_text(RopeNode *node);
 // Rope functions
 RopeNode *create_leaf(char *text);
 RopeNode *concat(RopeNode *left, RopeNode *right);
-RopeNode *append_node(RopeNode *root, RopeNode *leaf);
 RopeNode *load_file(char *filename);
 
 // AVL balancing
@@ -198,71 +197,77 @@ RopeNode *create_leaf(char *text) {
 }
 
 
-// Combines two nodes
-RopeNode *concat(RopeNode *left, RopeNode *right) {
+// Combines two subtrees and returns the root of the concatenated tree
+// NOTE: concat() rebalances just the new concatenated subtree, not the whole tree
+// NOTE: don't forget to rebalance the tree after using concat()
+RopeNode *concat(RopeNode *left_subtree, RopeNode *right_subtree) {
 	// Edge cases
-	if (left == NULL)
-		return right;
-	if (right == NULL)
-		return left;
+	if (left_subtree == NULL)
+		return right_subtree;
+	if (right_subtree == NULL)
+		return left_subtree;
 
-	// Create an internal node whose children would be left & right
-	RopeNode *node = calloc(1, sizeof(RopeNode));
-	// If calloc fails
-	if (node == NULL) {
-		perror("calloc");
-		exit(EXIT_FAILURE);
-	}
+	// Calculate skew
+	int skew = node_height(right_subtree) - node_height(left_subtree);
 
-	// Update the parent node
-	node->left = left;
-	node->right = right;
-	update_metadata(node);
+	// CASE-1: There isn't much height difference between left & height
+	// Create a new parent node and attach left & right subtree as its children
+	if (skew >= -1 && skew <= 1) {
+		// Create an internal node whose children would be left & right
+		RopeNode *node = calloc(1, sizeof(RopeNode));
 
-	// Set the parent pointers of left & right
-	left->parent = node;
-	right->parent = node;
-
-	return node;
-}
-
-
-// Inserts leaves at the right most internal node (basically appending the leaf to the tree)
-RopeNode *append_node(RopeNode *root, RopeNode *leaf) {
-	// Appending to empty tree
-	if (root == NULL)
-		root = leaf;
-
-	else {
-		// If tree has only one leaf
-		if (is_leaf(root))
-			root = concat(root, leaf);  // root concatenates two leaves
-
-		// If tree has internal nodes
-		else {
-			// Trying to set right_most = right most internal node
-			RopeNode *right_most = root;
-			while (!is_leaf(right_most->right))
-				right_most = right_most->right;
-
-			// new_node concatenates two leaves and becomes the right child of right_most
-			RopeNode *new_node = concat(right_most->right, leaf);
-			right_most->right = new_node;
-			new_node->parent = right_most;
-			update_metadata(right_most);
-
-			// Rebalance iteratively from bottom to up
-			for (RopeNode *node = new_node; node != NULL; node = node->parent) {
-				if (node->parent == NULL)
-					root = rebalance(node);
-				else
-					rebalance(node);
-			}
+		// If calloc fails
+		if (node == NULL) {
+			perror("calloc");
+			exit(EXIT_FAILURE);
 		}
+
+		// Update the new internal/parent node
+		node->left = left_subtree;
+		node->right = right_subtree;
+		update_metadata(node);
+
+		// Set the parent pointers of left & right subtree
+		left_subtree->parent = node;
+		right_subtree->parent = node;
+
+		// Return the new internal/parent node
+		return node;
 	}
 
-	return root;
+	// CASE-2: Right subtree is heavier: attach left subtree deep in left spine of right subtree
+	if (skew >= 2) {
+		// Recurse down the left spine of right subtree to find the perfect spot for concatenating (|skew| < 1)
+		right_subtree->left = concat(left_subtree, right_subtree->left);
+
+		// Update the parent pointer of right_subtree->left
+		if (right_subtree->left)
+			right_subtree->left->parent = right_subtree;
+
+		// Update metadata & rebalance the node and return the rebalanced root
+		update_metadata(right_subtree);
+		return rebalance(right_subtree);
+	}
+
+	// CASE-3: Left subtree is heavier: attach right subtree deep in right spine of left subtree
+	if (skew <= -2) {
+		// Recurse down the right spine of left subtree to find the perfect spot for concatenating (|skew| < 1)
+		left_subtree->right = concat(left_subtree->right, right_subtree);
+
+		// Update the parent pointer of left_subtree->right
+		if (left_subtree->right)
+			left_subtree->right->parent = left_subtree;
+
+		// Update metadata & rebalance the node and return the rebalanced root
+		update_metadata(left_subtree);
+		return rebalance(left_subtree);
+	}
+
+	// concat() should never reach here but this silences warnings
+	return NULL;
 }
+
+
 
 
 // Loads the file into a rope
@@ -282,7 +287,7 @@ RopeNode *load_file(char *filename) {
 	while ((n = fread(buffer, 1, CHUNK_SIZE, fp)) > 0) {  // fread() returns the number of characters that were read
 		buffer[n] = '\0';                                 // terminate buffer with null character
 		RopeNode *leaf = create_leaf(buffer);             // create a leaf with the buffer
-		root = append_node(root, leaf);                   // append the leaf to the tree
+		root = concat(root, leaf);                        // append the leaf to the tree
     }
 
     fclose(fp);
