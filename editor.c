@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define CHUNK_SIZE 2
+#define CHUNK_SIZE 4
 
 
 // NOTE: There are two types of nodes here: internal nodes & leaf nodes
@@ -43,13 +43,17 @@ int node_height(RopeNode *node);
 int string_length(char *str);
 int count_newlines(char *str);
 void update_metadata(RopeNode *node);
-char *string_copy(const char *src);
+char *string_copy(char *src);
 void print_text(RopeNode *node);
 
 // Rope functions
 RopeNode *create_leaf(char *text);
 RopeNode *concat(RopeNode *left, RopeNode *right);
+
+// File operations
 RopeNode *load_file(char *filename);
+bool save_file(RopeNode *root, char *filename);
+void write_rope_to_file(RopeNode *node, FILE *fp);
 
 // AVL balancing
 int get_skew(RopeNode *node);
@@ -60,6 +64,7 @@ RopeNode *rebalance(RopeNode *node);
 // Debug helpers
 void print_tree(RopeNode *root);
 void print_tree_rec(RopeNode *node, int depth, char branch);
+
 
 
 
@@ -86,12 +91,14 @@ int node_height(RopeNode *node) {
 }
 
 
+// Returns the length of a given string (returns 0 if NULL string is passed)
 int string_length(char *str) {
 	if (str != NULL)
 		return strlen(str);
 	else
 		return 0;  // returns 0 if node is NULL
 }
+
 
 // Returns the number '\n's in a string
 int count_newlines(char *str) {
@@ -109,7 +116,7 @@ int count_newlines(char *str) {
 }
 
 
-// Recomputes total_len, weight, height and newlines
+// Recomputes total_len, weight, height and newlines of a node
 void update_metadata(RopeNode *node) {
 	// Edge case when node is NULL
 	if (node == NULL)
@@ -132,7 +139,8 @@ void update_metadata(RopeNode *node) {
 		int right_len = node->right ? node->right->total_len : 0;
 		node->total_len = left_len + right_len;
 
-		node->weight = left_len;  // Weight of internal node = total length of characters in the left subtree
+		// Weight of internal node = total length of characters in the left subtree
+		node->weight = left_len;
 
 		// Calculates the height based on the heights of the node's children
 		node->height = 1 + MAX(node_height(node->left), node_height(node->right));
@@ -147,9 +155,9 @@ void update_metadata(RopeNode *node) {
 }
 
 
-// Allocates memory for a string and copies the input to it
-char *string_copy(const char *src) {
-    char *dst = malloc(strlen (src) + 1);  // Space for length plus nul
+// Allocates memory for a string, copies the input to it and returns the new string
+char *string_copy(char *src) {
+    char *dst = malloc(string_length(src) + 1);  // Space for length plus nul
 	// If malloc fails
     if (dst == NULL) {
 		perror("malloc");
@@ -161,8 +169,7 @@ char *string_copy(const char *src) {
 }
 
 
-// Prints all the text in a rope using recursion
-// Useful for debugging
+// Prints all the text in a rope using recursion (useful for debugging)
 void print_text(RopeNode *node) {
 	// Return void if node is NULL
 	if (node == NULL)
@@ -199,7 +206,7 @@ RopeNode *create_leaf(char *text) {
 
 // Combines two subtrees and returns the root of the concatenated tree
 // NOTE: concat() rebalances just the new concatenated subtree, not the whole tree
-// NOTE: don't forget to rebalance the tree after using concat()
+// NOTE: don't forget to rebalance the above the subtree after using concat()
 RopeNode *concat(RopeNode *left_subtree, RopeNode *right_subtree) {
 	// Edge cases
 	if (left_subtree == NULL)
@@ -268,8 +275,6 @@ RopeNode *concat(RopeNode *left_subtree, RopeNode *right_subtree) {
 }
 
 
-
-
 // Loads the file into a rope
 RopeNode *load_file(char *filename) {
 	FILE *fp = fopen(filename, "r");  // open the file in read mode
@@ -292,6 +297,46 @@ RopeNode *load_file(char *filename) {
 
     fclose(fp);
     return root;
+}
+
+
+// Writes rope content to file recursively
+void write_rope_to_file(RopeNode *node, FILE *fp) {
+	// Base condition-1: NULL is reached
+	if (node == NULL)
+		return;
+
+	// Base condition-2: leaf is reached
+	if (is_leaf(node)) {
+		if (node->str != NULL)
+			fprintf(fp, "%s", node->str);     // appends the string to the file
+		return;
+	}
+
+	// Recurse to children
+	write_rope_to_file(node->left, fp);
+	write_rope_to_file(node->right, fp);
+}
+
+
+// Saves the rope to a file
+bool save_file(RopeNode *root, char *filename) {
+	// Edge case
+	if (filename == NULL)
+		return false;
+
+	// Open file
+	FILE *fp = fopen(filename, "w");
+	if (!fp) {
+		perror("Error saving file");
+		return false;
+	}
+
+	// Use the recursive helper function to write to the file
+	write_rope_to_file(root, fp);
+	fclose(fp);
+
+	return true;
 }
 
 
@@ -473,8 +518,7 @@ RopeNode *rebalance(RopeNode *node) {
 }
 
 
-// Prints the tree structure
-// Useful for debugging
+// Prints the tree structure (useful for debugging)
 void print_tree(RopeNode *root) {
 	printf("\n========== ROPE TREE DUMP ==========\n");
 	if (root == NULL)
@@ -509,9 +553,13 @@ void print_tree_rec(RopeNode *node, int depth, char branch) {
 	// Leaf preview
 	if (node->str != NULL) {
 		printf("leaf=\"");
-		for (int i = 0; i < 20 && node->str[i] != '\0'; i++)
-			putchar(node->str[i]);
-		if (node->str[20] != '\0')
+		for (int i = 0; i < 20 && node->str[i] != '\0'; i++) {
+			if (node->str[i] == '\n')
+				printf("\\n");
+			else
+				putchar(node->str[i]);
+		}
+		if (strlen(node->str) > 20)
 			printf("...");
 		printf("\" ");
 	}
@@ -538,5 +586,9 @@ int main(int argc, char **argv) {
 	print_text(root);
 
 	print_tree(root);
+
+	char *filename = "save.txt";
+	if (save_file(root, filename))
+		printf("File saved successfully to: %s\n", filename);
 	return 0;
 }
