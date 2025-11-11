@@ -51,6 +51,7 @@ void print_text(RopeNode *node);
 RopeNode *create_leaf(char *text);
 RopeNode *concat(RopeNode *left, RopeNode *right);
 void split(RopeNode *root, int idx, RopeNode **left, RopeNode **right);
+void free_rope(RopeNode *root);
 
 // File operations
 RopeNode *load_file(char *filename);
@@ -380,6 +381,31 @@ void split(RopeNode *node, int idx, RopeNode **left, RopeNode **right) {
 }
 
 
+// Recursively frees all nodes and their strings in the rope
+void free_rope(RopeNode *root) {
+	// BASE-CASE
+	if (root == NULL)
+		return;
+
+	// Free children first: Post Order
+	free_rope(root->left);
+	free_rope(root->right);
+
+	// Free string if root is leaf
+	if (root->str != NULL)
+		free(root->str);
+
+	// Set everything to NULL
+	root->left = NULL;
+	root->right = NULL;
+	root->parent = NULL;
+	root->str = NULL;
+
+	// Free the node
+	free(root);
+}
+
+
 // Loads the file into a rope
 RopeNode *load_file(char *filename) {
 	FILE *fp = fopen(filename, "r");  // open the file in read mode
@@ -694,6 +720,9 @@ int main(int argc, char **argv) {
 	char *filename = "save.txt";
 	if (save_file(right, filename))
 		printf("File saved successfully to: %s\n", filename);
+
+	free_rope(left);
+	free_rope(right);
 
 	return 0;
 }
