@@ -50,6 +50,8 @@ char *substr(char *start, int n);
 RopeNode *create_leaf(char *text);
 RopeNode *concat(RopeNode *left, RopeNode *right);
 void split(RopeNode *root, int idx, RopeNode **left, RopeNode **right);
+RopeNode *build_rope(char *text);
+RopeNode *insert_at(RopeNode *root, int idx, char *text);
 void free_rope(RopeNode *root);
 
 // File operations
@@ -360,6 +362,59 @@ void split(RopeNode *node, int idx, RopeNode **left, RopeNode **right) {
 
 	// Free the old internal node
 	free(node);
+}
+
+
+// Builds a rope from a string
+RopeNode *build_rope(char *text) {
+	// Edge case
+	if (text == NULL)
+		return NULL;
+
+	int len = string_length(text);
+	RopeNode *root = NULL;
+
+	// Iteratively create leaves and concatenate to the root
+	for (int i = 0; i < len; i += CHUNK_SIZE) {
+		char *buffer = substr(text + i, CHUNK_SIZE);  // copies a substring
+		RopeNode *leaf = create_leaf(buffer);         // creates a leaf
+		root = concat(root, leaf);                    // concatenate with root
+		free(buffer);                                 // free the substring
+	}
+
+	// Return the root of the rope
+	return root;
+}
+
+// Inserts a string at a given index
+// Splits the rope into two at the given index and concatenates a new rope in between
+RopeNode *insert_at(RopeNode *root, int idx, char *text) {
+	// Edge case
+	if (root == NULL)
+		return build_rope(text);
+	if (text == NULL)
+		return root;
+
+	// Index handling
+	if (idx < 0)
+		idx = 0;
+	else if (idx > root->total_len)
+		idx = root->total_len;
+
+	// Split the rope
+	RopeNode *left, *right;
+	split(root, idx, &left, &right);
+
+	// Build the middle rope
+	RopeNode *mid = build_rope(text);
+
+	// Concatenate the ropes
+	RopeNode *result;
+	result = concat(left, mid);
+	result = concat(result, right);
+
+	// Return the resulting rope
+	return result;
 }
 
 
@@ -714,15 +769,13 @@ int main(int argc, char **argv) {
 
 	RopeNode *root = load_file(argv[1]);
 
-	RopeNode *left, *right;
-	split(root, 1000, &left, &right);
+	root = insert_at(root, 7, "this is a ");
 
-	char *filename = "save.txt";
-	if (save_file(right, filename))
+	char *filename = argv[1];
+	if (save_file(root, filename))
 		printf("File saved successfully to: %s\n", filename);
 
-	free_rope(left);
-	free_rope(right);
+	free_rope(root);
 
 	return 0;
 }
