@@ -301,49 +301,60 @@ RopeNode *concat(RopeNode *left_subtree, RopeNode *right_subtree) {
 
 // Splits a tree into two parts at a given index recursively and concatenates to rebuild the trees
 // 'left' and 'right' are the resulting subtrees
-void split(RopeNode *root, int idx, RopeNode **left, RopeNode **right) {
-	// Edge case: root is NULL
-	if (root == NULL) {
+void split(RopeNode *node, int idx, RopeNode **left, RopeNode **right) {
+	// Edge case: node is NULL
+	if (node == NULL) {
 		*left = NULL;
 		*right = NULL;
 		return;
 	}
 
-	// BASE CASE: root is a leaf node
-	if (is_leaf(root)) {
-		int len = string_length(root->str);
+	// BASE CASE: node is a leaf node
+	if (is_leaf(node)) {
+		int len = string_length(node->str);
 
 		// Everything to the right
 		if (idx <= 0) {
 			*left = NULL;
-			*right = root;
+			*right = node;
 		}
 
 		// Everything to the left
 		else if (idx >= len) {
-			*left = root;
+			*left = node;
 			*right = NULL;
 		}
 
 		// Split the leaf into two leaves
 		else {
-			*left = create_leaf(substr(root->str, idx));
-			*right = create_leaf(substr(root->str + idx, len - idx));
+			// Slicing the leaf
+			char *left_part = substr(node->str, idx);
+			char *right_part = substr(node->str + idx, len - idx);
+
+			// Creating new leaves with the slices
+			*left = create_leaf(left_part);
+			*right = create_leaf(right_part);
+
+			// Free memory
+			free(left_part);
+			free(right_part);
+			free(node->str);
+			free(node);
 		}
 
 		return;
 	}
 
 	// CASE-1: required index is in the left subtree
-	if (idx < root->weight) {
+	if (idx < node->weight) {
 		RopeNode *L;  // left split of the left subtree
 		RopeNode *R;  // right split of the left subtree
 
 		// Split the left subtree
-		split(root->left, idx, &L, &R);
+		split(node->left, idx, &L, &R);
 
 		// concatenate the right portion of the split of left subtree with right portion of current split
-		*right = concat(R, root->right);
+		*right = concat(R, node->right);
 
 		// Update 'left' with the left portion of the split of left subtree
 		*left = L;
@@ -355,14 +366,17 @@ void split(RopeNode *root, int idx, RopeNode **left, RopeNode **right) {
 		RopeNode *R;  // right split of the right subtree
 
 		// Split the right subtree
-		split(root->right, idx - root->weight, &L, &R);  // NOTE: index changes when we recurse to right subtree
+		split(node->right, idx - node->weight, &L, &R);  // NOTE: index changes when we recurse to right subtree
 
 		// concatenate the left portion of the split of right subtree with left portion of current split
-		*left = concat(root->left, L);
+		*left = concat(node->left, L);
 
 		// Update 'right' with the right portion of the split of right subtree
 		*right = R;
 	}
+
+	// Free the old internal node
+	free(node);
 }
 
 
@@ -674,21 +688,11 @@ int main(int argc, char **argv) {
 
 	RopeNode *root = load_file(argv[1]);
 
-	print_text(root);
-
 	RopeNode *left, *right;
-	split(root, 6, &left, &right);
-	printf("\nLeft: ");
-	print_text(left);
-	printf("\nRight: ");
-	print_text(right);
-	printf("\n");
-
-	print_tree(left);
-	print_tree(right);
+	split(root, 11, &left, &right);
 
 	char *filename = "save.txt";
-	if (save_file(root, filename))
+	if (save_file(right, filename))
 		printf("File saved successfully to: %s\n", filename);
 
 	return 0;
