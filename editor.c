@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define CHUNK_SIZE 4
+#define CHUNK_SIZE 64
 
 
 // NOTE: There are two types of nodes here: internal nodes & leaf nodes
@@ -45,7 +45,6 @@ int count_newlines(char *str);
 void update_metadata(RopeNode *node);
 char *string_copy(char *src);
 char *substr(char *start, int n);
-void print_text(RopeNode *node);
 
 // Rope functions
 RopeNode *create_leaf(char *text);
@@ -65,6 +64,7 @@ RopeNode *rotate_left(RopeNode *node);
 RopeNode *rebalance(RopeNode *node);
 
 // Debug helpers
+void print_text(RopeNode *node);
 void print_tree(RopeNode *root);
 void print_tree_rec(RopeNode *node, int depth, char branch);
 
@@ -191,24 +191,6 @@ char *substr(char *start, int n) {
 	strncpy(dst, start, n);  // Copy the characters
 	dst[n] = '\0';           // Add null terminator
 	return dst;              // Return the new string
-}
-
-
-// Prints all the text in a rope using recursion (useful for debugging)
-void print_text(RopeNode *node) {
-	// Return void if node is NULL
-	if (node == NULL)
-		return;
-
-	// CASE 1: node = leaf node
-	if (is_leaf(node))
-		printf("%s", node->str);
-
-	// CASE 2: node = internal node
-	else {
-		print_text(node->left);   // recurse to the left subtree
-		print_text(node->right);  // recurse to the right subtree
-	}
 }
 
 
@@ -649,6 +631,24 @@ RopeNode *rebalance(RopeNode *node) {
 }
 
 
+// Prints all the text in a rope using recursion (useful for debugging)
+void print_text(RopeNode *node) {
+	// Return void if node is NULL
+	if (node == NULL)
+		return;
+
+	// CASE 1: node = leaf node
+	if (is_leaf(node))
+		printf("%s", node->str);
+
+	// CASE 2: node = internal node
+	else {
+		print_text(node->left);   // recurse to the left subtree
+		print_text(node->right);  // recurse to the right subtree
+	}
+}
+
+
 // Prints the tree structure (useful for debugging)
 void print_tree(RopeNode *root) {
 	printf("\n========== ROPE TREE DUMP ==========\n");
@@ -715,7 +715,7 @@ int main(int argc, char **argv) {
 	RopeNode *root = load_file(argv[1]);
 
 	RopeNode *left, *right;
-	split(root, 11, &left, &right);
+	split(root, 1000, &left, &right);
 
 	char *filename = "save.txt";
 	if (save_file(right, filename))
