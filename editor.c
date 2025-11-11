@@ -44,11 +44,13 @@ int string_length(char *str);
 int count_newlines(char *str);
 void update_metadata(RopeNode *node);
 char *string_copy(char *src);
+char *substr(char *start, int n);
 void print_text(RopeNode *node);
 
 // Rope functions
 RopeNode *create_leaf(char *text);
 RopeNode *concat(RopeNode *left, RopeNode *right);
+void split(RopeNode *root, int idx, RopeNode **left, RopeNode **right);
 
 // File operations
 RopeNode *load_file(char *filename);
@@ -157,7 +159,7 @@ void update_metadata(RopeNode *node) {
 
 // Allocates memory for a string, copies the input to it and returns the new string
 char *string_copy(char *src) {
-    char *dst = malloc(string_length(src) + 1);  // Space for length plus nul
+    char *dst = malloc(string_length(src) + 1);  // Space for length plus null
 	// If malloc fails
     if (dst == NULL) {
 		perror("malloc");
@@ -166,6 +168,28 @@ char *string_copy(char *src) {
 
     strcpy(dst, src);                      // Copy the characters
     return dst;                            // Return the new string
+}
+
+
+// Allocates memory for a string, copies a substring (of length n) of the input and returns the new string
+char *substr(char *start, int n) {
+	// Edge case
+	if (start == NULL)
+		return NULL;
+	if (n > string_length(start)) {
+		n = string_length(start);
+	}
+
+    char *dst = malloc(n + 1);  // Space for length plus null
+	// If malloc fails
+    if (dst == NULL) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+
+	strncpy(dst, start, n);  // Copy the characters
+	dst[n] = '\0';           // Add null terminator
+	return dst;              // Return the new string
 }
 
 
@@ -272,6 +296,73 @@ RopeNode *concat(RopeNode *left_subtree, RopeNode *right_subtree) {
 
 	// concat() should never reach here but this silences warnings
 	return NULL;
+}
+
+
+// Splits a tree into two parts at a given index recursively and concatenates to rebuild the trees
+// 'left' and 'right' are the resulting subtrees
+void split(RopeNode *root, int idx, RopeNode **left, RopeNode **right) {
+	// Edge case: root is NULL
+	if (root == NULL) {
+		*left = NULL;
+		*right = NULL;
+		return;
+	}
+
+	// BASE CASE: root is a leaf node
+	if (is_leaf(root)) {
+		int len = string_length(root->str);
+
+		// Everything to the right
+		if (idx <= 0) {
+			*left = NULL;
+			*right = root;
+		}
+
+		// Everything to the left
+		else if (idx >= len) {
+			*left = root;
+			*right = NULL;
+		}
+
+		// Split the leaf into two leaves
+		else {
+			*left = create_leaf(substr(root->str, idx));
+			*right = create_leaf(substr(root->str + idx, len - idx));
+		}
+
+		return;
+	}
+
+	// CASE-1: required index is in the left subtree
+	if (idx < root->weight) {
+		RopeNode *L;  // left split of the left subtree
+		RopeNode *R;  // right split of the left subtree
+
+		// Split the left subtree
+		split(root->left, idx, &L, &R);
+
+		// concatenate the right portion of the split of left subtree with right portion of current split
+		*right = concat(R, root->right);
+
+		// Update 'left' with the left portion of the split of left subtree
+		*left = L;
+	}
+
+	// CASE-2: required index is in the right subtree
+	else {
+		RopeNode *L;  // left split of the right subtree
+		RopeNode *R;  // right split of the right subtree
+
+		// Split the right subtree
+		split(root->right, idx - root->weight, &L, &R);  // NOTE: index changes when we recurse to right subtree
+
+		// concatenate the left portion of the split of right subtree with left portion of current split
+		*left = concat(root->left, L);
+
+		// Update 'right' with the right portion of the split of right subtree
+		*right = R;
+	}
 }
 
 
@@ -585,10 +676,20 @@ int main(int argc, char **argv) {
 
 	print_text(root);
 
-	print_tree(root);
+	RopeNode *left, *right;
+	split(root, 6, &left, &right);
+	printf("\nLeft: ");
+	print_text(left);
+	printf("\nRight: ");
+	print_text(right);
+	printf("\n");
+
+	print_tree(left);
+	print_tree(right);
 
 	char *filename = "save.txt";
 	if (save_file(root, filename))
 		printf("File saved successfully to: %s\n", filename);
+
 	return 0;
 }
