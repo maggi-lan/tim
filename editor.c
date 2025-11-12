@@ -52,6 +52,7 @@ RopeNode *concat(RopeNode *left, RopeNode *right);
 void split(RopeNode *root, int idx, RopeNode **left, RopeNode **right);
 RopeNode *build_rope(char *text);
 RopeNode *insert_at(RopeNode *root, int idx, char *text);
+RopeNode *delete_at(RopeNode *root, int start, int len);
 void free_rope(RopeNode *root);
 
 // File operations
@@ -162,15 +163,15 @@ void update_metadata(RopeNode *node) {
 
 // Allocates memory for a string, copies the input to it and returns the new string
 char *string_copy(char *src) {
-    char *dst = malloc(string_length(src) + 1);  // Space for length plus null
+	char *dst = malloc(string_length(src) + 1);  // Space for length plus null
 	// If malloc fails
-    if (dst == NULL) {
+	if (dst == NULL) {
 		perror("malloc");
 		exit(EXIT_FAILURE);
 	}
 
-    strcpy(dst, src);                      // Copy the characters
-    return dst;                            // Return the new string
+	strcpy(dst, src);                      // Copy the characters
+	return dst;                            // Return the new string
 }
 
 
@@ -388,6 +389,7 @@ RopeNode *build_rope(char *text) {
 
 // Inserts a string at a given index
 // Splits the rope into two at the given index and concatenates a new rope in between
+// Returns the new root
 RopeNode *insert_at(RopeNode *root, int idx, char *text) {
 	// Edge case
 	if (root == NULL)
@@ -414,6 +416,47 @@ RopeNode *insert_at(RopeNode *root, int idx, char *text) {
 	result = concat(result, right);
 
 	// Return the resulting rope
+	return result;
+}
+
+
+// Delete a string of certain length at a given index
+// Splits the rope at two points and concats the left most and right most ropes
+// NOTE: root = root node of the rope
+// NOTE: start = starts deleting from this index
+// NOTE: len = length of text to be deleted
+// Returns the new root
+RopeNode *delete_at(RopeNode *root, int start, int len) {
+	// Edge case
+	if (root == NULL || len <= 0)
+		return root;
+
+	// Clamp start and len
+	if (start < 0)
+		start = 0;
+	if (start >= root->total_len)
+		return root;  // nothing to delete
+	if (start + len > root->total_len)
+		len = root->total_len - start;
+
+	// Split at 'start' -> left + mid
+	RopeNode *left = NULL;
+	RopeNode *mid = NULL;
+	split(root, start, &left, &mid);
+
+	// Split at 'mid' at 'len' -> mid + right
+	RopeNode *right = NULL;
+	split(mid, len, &mid, &right);
+
+	// Delete 'mid'
+	free_rope(mid);
+	mid = NULL;
+
+	// Rebuild the rope with 'left' & 'right'
+	RopeNode *result = concat(left, right);
+	result = rebalance(result);
+
+	// Return the result
 	return result;
 }
 
@@ -542,9 +585,7 @@ RopeNode *rotate_right(RopeNode *node) {
 
 	RopeNode *y = node;
 	RopeNode *x = y->left;
-	RopeNode *A = x->left;
 	RopeNode *B = x->right;
-	RopeNode *C = y->right;
 
 	// Shift the parent of y to become the parent of x
 	RopeNode *parent = node->parent;
@@ -599,9 +640,7 @@ RopeNode *rotate_left(RopeNode *node) {
 
 	RopeNode *x = node;
 	RopeNode *y = x->right;
-	RopeNode *A = x->left;
 	RopeNode *B = y->left;
-	RopeNode *C = y->right;
 
 	// Shift the parent of x to become the parent of y
 	RopeNode *parent = node->parent;
@@ -769,7 +808,8 @@ int main(int argc, char **argv) {
 
 	RopeNode *root = load_file(argv[1]);
 
-	root = insert_at(root, 7, "this is a ");
+	root = delete_at(root, 7, 6);
+	print_text(root);
 
 	char *filename = argv[1];
 	if (save_file(root, filename))
