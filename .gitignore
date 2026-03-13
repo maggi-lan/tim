@@ -5,6 +5,7 @@
 *.out
 *.exe
 tim
+tim_debug
 
 # Editor Junk
 *.swp
