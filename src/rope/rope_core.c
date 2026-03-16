@@ -251,7 +251,6 @@ RopeNode *delete_at(RopeNode *root, int start, int len) {
 	mid = NULL;
 
 	RopeNode *new_root = concat(left, right);
-	new_root = rebalance(new_root);
 
 	return new_root;
 }

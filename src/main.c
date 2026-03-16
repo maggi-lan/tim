@@ -13,9 +13,7 @@ int main(int argc, char **argv) {
 	if (!root)
         return 1;
 
-	// TODO: init editor state
-	// TODO: init ncurses UI
-	// TODO: start event loop
+	// TODO: idk, make it an editor or something
 
 	free_rope(root);
 	return 0;
