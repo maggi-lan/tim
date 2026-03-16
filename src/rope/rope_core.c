@@ -1,4 +1,4 @@
-#include "../include/rope.h"
+#include "rope.h"
 
 #include <stdio.h>
 #include <stdlib.h>

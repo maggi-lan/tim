@@ -1,7 +1,8 @@
-#include "../include/file_io.h"
-
-#include "../include/rope.h"
+#include <stdio.h>
 #include <stdlib.h>
+
+#include "file_io.h"
+#include "rope.h"
 
 
 // Loads the file into a rope and returns the root of the rope

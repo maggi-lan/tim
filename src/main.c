@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include "../include/rope.h"
-#include "../include/file_io.h"
+#include "rope.h"
+#include "file_io.h"
 
 int main(int argc, char **argv) {
 	if (argc != 2) {

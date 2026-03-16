@@ -5,12 +5,15 @@
 *.out
 *.exe
 tim
-tim_debug
+
+# Build directory
+build/
 
 # Editor Junk
 *.swp
 *.~
 .vscode/
 
-# Test Files
-*.txt
+# IDE
+.idea/
+.DS_Store
