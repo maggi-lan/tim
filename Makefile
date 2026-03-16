@@ -20,18 +20,7 @@ tim: $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Debug binary (no ncurses, uses debug/rope_debug.c as entry point)
-DEBUG_SRC = debug/rope_debug.c \
-            src/rope_core.c \
-            src/rope_avl.c \
-            src/rope_helper.c \
-            src/rope_utility.c \
-            src/file_io.c
-
-tim_debug: $(DEBUG_SRC)
-	$(CC) $(CFLAGS) -o $@ $^
-
 clean:
-	rm -f src/*.o tim tim_debug
+	rm -f src/*.o tim
 
 .PHONY: clean
