@@ -6,14 +6,23 @@
 #include <termios.h>
 #include <unistd.h>
 
+# define CTRL_PLUS(ch) ((ch) & 0x1f)  // 'Ctrl+ch'
+
 
 // Terminal state before enabling raw mode
 struct termios old_term;
 
 
-// Raw mode operations
-void enableRawMode(void);
-void disableRawMode(void);
+// Terminal operations
+void enable_raw(void);
+void disable_raw(void);
+char read_key(void);
+
+// Input operations
+void process_keypress(void);
+
+// Helper functions
+void halt(char *str);
 
 
 
@@ -22,13 +31,12 @@ void disableRawMode(void);
 -> Switches terminal from canonical mode to raw mode
 -> Does it by altering a couple of terminal attributes
 */
-void enableRawMode(void) {
+void enable_raw(void) {
     // Save initial terminal state and load it after program execution ends
     if (tcgetattr(STDIN_FILENO, &old_term) == -1) {
-        perror("tcgetattr");
-        exit(EXIT_FAILURE);
+        halt("tcgetattr");
     }
-    atexit(disableRawMode);
+    atexit(disable_raw);
 
     struct termios raw_term = old_term;
 
@@ -57,42 +65,64 @@ void enableRawMode(void) {
     raw_term.c_cc[VTIME] = 1;  // basically adds a timeout for read()
 
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_term) == -1) {
-        perror("tcsetattr");
-        exit(EXIT_FAILURE);
+        halt("tcsetattr");
     }
 }
+
 
 /*
 -> Switches terminal from raw mode to canonical mode
 -> Does it by restoring the initial terminal state (which was in canonical mode)
 */
-void disableRawMode(void) {
+void disable_raw(void) {
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_term) == -1) {
-        perror("tcsetattr");
-        exit(EXIT_FAILURE);
+        halt("tcsetattr");
     }
 }
 
 
+// Captures keypress from STDIN and return it
+char read_key(void) {
+    int nread;
+    char ch;
+
+    // NOTE: read() has a timeout of 10 ms in raw mode
+    // Loop ends when exactly one character is read from STDIN
+    while ((nread = read(STDIN_FILENO, &ch, 1)) != 1) {
+        // If read fails
+        if (nread == -1 && errno != EAGAIN)
+            halt("read");
+    }
+
+    return ch;
+}
+
+
+// Captures input keypress and executes editor commands
+void process_keypress(void) {
+    char ch = read_key();
+
+    switch (ch) {
+        // Quit command
+        case CTRL_PLUS('q'):
+            exit(0);
+            break;
+    }
+}
+
+
+// Exits process with an error message
+void halt(char *str) {
+    perror(str);
+    exit(1);
+}
+
+
 int main(void) {
-    enableRawMode();
+    enable_raw();
 
     while(true) {
-        char ch = '\0';
-        if (read(STDIN_FILENO, &ch, 1) == -1 && errno != EAGAIN) {
-            perror("read");
-            exit(EXIT_FAILURE);
-        }
-
-        if (iscntrl(ch)) {
-            printf("%d\r\n", ch);
-        }
-        else {
-            printf("%d ('%c')\r\n", ch, ch);
-        }
-
-        if (ch == 'q')
-            break;
+        process_keypress();
     }
 
     return 0;
