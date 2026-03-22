@@ -41,6 +41,7 @@ typedef struct RopeNode {
 - weight = total length of text in all the leaf nodes from the left subtree
 */
 
+
 // Rope functions
 RopeNode *create_leaf(char *text);
 RopeNode *concat(RopeNode *left, RopeNode *right);
@@ -71,5 +72,6 @@ int find_newline_pos(RopeNode *node, int newline_idx, int offset);
 int get_line_start(RopeNode *root, int line);
 int get_line_length(RopeNode *root, int line);
 int count_total_lines(RopeNode *root);
+
 
 #endif

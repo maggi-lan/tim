@@ -186,6 +186,7 @@ RopeNode *build_rope(char *text) {
 	return root;
 }
 
+
 /*
 -> Inserts a string at a given index
 -> Splits the rope into two at the given index and concatenates a new rope in between

@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+
 /*
 -> Returns the character at a given index recursively
 -> Usage: pass in the root node and zero-based index
@@ -123,6 +124,7 @@ int get_line_length(RopeNode *root, int line) {
 
     return end - start;
 }
+
 
 // Returns the total number of lines in a rope
 int count_total_lines(RopeNode *root) {
