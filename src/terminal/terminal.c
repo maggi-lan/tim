@@ -1,4 +1,3 @@
-#include <ctype.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -6,7 +5,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-# define CTRL_PLUS(ch) ((ch) & 0x1f)  // 'Ctrl+ch'
+# define CTRL_PLUS(ch) ((ch) & 0x1f)  // 'Ctrl+Ch'
 
 
 // Terminal state before enabling raw mode
@@ -18,8 +17,12 @@ void enable_raw(void);
 void disable_raw(void);
 char read_key(void);
 
-// Input operations
+// Editor input operations
 void process_keypress(void);
+
+// Editor output operations
+void refresh_screen(void);
+void draw_rows(void);
 
 // Helper functions
 void halt(char *str);
@@ -105,14 +108,38 @@ void process_keypress(void) {
     switch (ch) {
         // Quit command
         case CTRL_PLUS('q'):
+            write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
+            write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
             exit(0);
             break;
     }
 }
 
 
+// Re-draws entire editor screen
+void refresh_screen(void) {
+    write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
+    write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
+
+    draw_rows();
+
+    write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left again
+}
+
+
+// Renders all visible rows in the editor viewport
+void draw_rows(void) {
+    for (int y = 0; y < 24; y++) {
+        write(STDOUT_FILENO, "~\r\n", 3);
+    }
+}
+
+
 // Exits process with an error message
 void halt(char *str) {
+    write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
+    write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
+
     perror(str);
     exit(1);
 }
@@ -123,6 +150,7 @@ int main(void) {
 
     while(true) {
         process_keypress();
+        refresh_screen();
     }
 
     return 0;
