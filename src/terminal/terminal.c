@@ -1,4 +1,3 @@
-#include <ctype.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -234,12 +233,28 @@ void draw_rows(AppendBuffer *ab) {
     for (int y = 0; y < E.screenrows; y++) {
         ab_append(ab, "\x1b[2K", 4);  // this escape sequence clears current line
 
-        // Welcome message
-        if (y == E.screenrows / 3) {
-            char welcome[80];
-            int welcomelen = snprintf(welcome, sizeof(welcome),
-                "Tim editor -- version %s", TIM_VERSION);
+        // Choose welcome message line
+        char welcome[80];
+        int welcomelen;
+        int WELCOME_LINES = 5;
+        if (y == (E.screenrows / 3))
+            welcomelen = snprintf(welcome, sizeof(welcome),
+                "TIM - Text vIM");
+        else if (y == (E.screenrows / 3) + 1)
+            welcomelen = snprintf(welcome, sizeof(welcome),
+                " ");
+        else if (y == (E.screenrows / 3) + 2)
+            welcomelen = snprintf(welcome, sizeof(welcome),
+                "version %s", TIM_VERSION);
+        else if (y == (E.screenrows / 3) + 3)
+            welcomelen = snprintf(welcome, sizeof(welcome),
+                "by Mahilan Suki");
+        else if (y == (E.screenrows / 3) + 4)
+            welcomelen = snprintf(welcome, sizeof(welcome),
+                "Tim is a text editor inspired by Vim");
 
+        // Display welcome message
+        if ((y >= (E.screenrows / 3)) && (y <= (E.screenrows / 3) + WELCOME_LINES - 1)) {
             // Truncate welcome message if needed
             if (welcomelen > E.screencols)
                 welcomelen = E.screencols;
