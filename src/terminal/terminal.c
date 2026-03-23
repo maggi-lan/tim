@@ -3,19 +3,27 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
 # define CTRL_PLUS(ch) ((ch) & 0x1f)  // 'Ctrl+Ch'
+# define ABUF_INIT {NULL, 0}
 
 
 // EditorState maintains the editor’s runtime data and configuration
-typedef struct EditorState{
-    int screenrows;
-    int screencols;
+typedef struct EditorState {
+    int screenrows;           // number of visible rows in the screen
+    int screencols;           // number of visible columns in the screen
     struct termios old_term;  // terminal state before enabling raw mode
 } EditorState;
+
+// AppendBuffer is a dynamic string type which supports appending
+typedef struct AppendBuffer {
+    char *buffer;  // buffer for the string
+    int len;       // length of the buffer
+} AppendBuffer;
 
 
 // Global editor state
@@ -35,6 +43,10 @@ void process_keypress(void);
 // Editor output operations
 void refresh_screen(void);
 void draw_rows(void);
+
+// Editor append buffer
+void ab_append(AppendBuffer *ab, char *str, int len);
+void ab_free(AppendBuffer *ab);
 
 // Editor initialization
 void init_editor(void);
@@ -132,6 +144,7 @@ int get_cursor_pos(int *row, int *col) {
     // NOTE: example -> "\x1b[30;40R" -> row = 30, col = 40
     if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
         return -1;
+
     // Parse through the result produced in STDIN and put it in 'buffer'
     while (i < sizeof(buffer) - 1) {
         if (read(STDIN_FILENO, &buffer[i], 1) != 1)
@@ -217,6 +230,25 @@ void draw_rows(void) {
         if (y < E.screenrows - 1)
             write(STDOUT_FILENO, "\r\n", 2);
     }
+}
+
+
+// Append a string to an AppendBuffer
+void ab_append(AppendBuffer *ab, char *str, int len) {
+    char *new = realloc(ab->buffer, ab->len + len);
+    if (new == NULL)
+        return;
+
+    memcpy(&new[ab->len], str, len);
+
+    ab->buffer = new;
+    ab->len += len;
+}
+
+
+// Frees an AppendBuffer in memory
+void ab_free(AppendBuffer *ab) {
+    free(ab->buffer);
 }
 
 
