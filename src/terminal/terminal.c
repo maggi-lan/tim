@@ -8,6 +8,7 @@
 #include <termios.h>
 #include <unistd.h>
 
+# define TIM_VERSION "0.0.1"
 # define CTRL_PLUS(ch) ((ch) & 0x1f)  // 'Ctrl+Ch'
 # define ABUF_INIT {NULL, 0}
 
@@ -42,7 +43,7 @@ void process_keypress(void);
 
 // Editor output operations
 void refresh_screen(void);
-void draw_rows(void);
+void draw_rows(AppendBuffer *ab);
 
 // Editor append buffer
 void ab_append(AppendBuffer *ab, char *str, int len);
@@ -213,22 +214,53 @@ void process_keypress(void) {
 
 // Re-draws entire editor screen
 void refresh_screen(void) {
-    write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
-    write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
+    AppendBuffer ab = ABUF_INIT;
 
-    draw_rows();
+    ab_append(&ab, "\x1b[?25l", 6);  // this escape sequence hides cursor
+    ab_append(&ab, "\x1b[H", 3);     // this escape sequence moves cursor to top left
 
-    write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left again
+    draw_rows(&ab);
+
+    ab_append(&ab, "\x1b[H", 3);     // this escape sequence moves cursor to top left again
+    ab_append(&ab, "\x1b[?25h", 6);  // this escape sequence shows cursor
+
+    write(STDOUT_FILENO, ab.buffer, ab.len);
+    ab_free(&ab);
 }
 
 
 // Renders all visible rows in the editor viewport
-void draw_rows(void) {
+void draw_rows(AppendBuffer *ab) {
     for (int y = 0; y < E.screenrows; y++) {
-        write(STDOUT_FILENO, "~", 1);
+        ab_append(ab, "\x1b[2K", 4);  // this escape sequence clears current line
+
+        // Welcome message
+        if (y == E.screenrows / 3) {
+            char welcome[80];
+            int welcomelen = snprintf(welcome, sizeof(welcome),
+                "Tim editor -- version %s", TIM_VERSION);
+
+            // Truncate welcome message if needed
+            if (welcomelen > E.screencols)
+                welcomelen = E.screencols;
+
+            // Add padding to welcome message
+            int padding = (E.screencols - welcomelen) / 2;
+            if (padding) {
+                ab_append(ab, "~", 1);
+                padding--;
+            }
+            while (padding--)
+                ab_append(ab, " ", 1);
+
+            ab_append(ab, welcome, welcomelen);
+        }
+        else {
+            ab_append(ab, "~", 1);
+        }
 
         if (y < E.screenrows - 1)
-            write(STDOUT_FILENO, "\r\n", 2);
+            ab_append(ab, "\r\n", 2);
     }
 }
 
