@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -25,6 +26,7 @@ EditorState E;
 void enable_raw(void);
 void disable_raw(void);
 char read_key(void);
+int get_cursor_pos(int *row, int *col);
 int get_window_size(int *rows, int *cols);
 
 // Editor input operations
@@ -115,6 +117,43 @@ char read_key(void) {
 
 
 /*
+-> Fetches the current position (row, col) of the cursor
+-> Updates the values pointed by 'row' and 'col'
+-> Returns 0 in case of success and -1 in case of error
+-> Cursor positions start from 1 (not 0)
+*/
+int get_cursor_pos(int *row, int *col) {
+    char buffer[32];
+    unsigned int i = 0;
+
+    // Query for current cursor position
+    // NOTE: we can retrieve this result from STDIN
+    // NOTE: the result is an escape sequence that terminates with 'R'
+    // NOTE: example -> "\x1b[30;40R" -> row = 30, col = 40
+    if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
+        return -1;
+    // Parse through the result produced in STDIN and put it in 'buffer'
+    while (i < sizeof(buffer) - 1) {
+        if (read(STDIN_FILENO, &buffer[i], 1) != 1)
+            return -1;
+        if (buffer[i] == 'R')
+            break;
+        i++;
+    }
+    buffer[i] = '\0';
+
+    if (buffer[0] != '\x1b' || buffer[1] != '[')
+        return -1;
+
+    // Extract the values from the buffer
+    if (sscanf(&buffer[2], "%d;%d", row, col) != 2)
+        return -1;
+
+    return 0;
+}
+
+
+/*
 -> Fetches the dimensions of the terminal screen
 -> Updates the values pointed to by 'rows' and 'cols'
 -> Returns 0 in case of success and -1 in case of error
@@ -122,14 +161,25 @@ char read_key(void) {
 int get_window_size(int *rows, int *cols) {
     struct winsize ws;
 
-    // ioctl() will fetch the terminal dimensions and update 'ws'
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
-        return -1;  // error case
+    // NOTE: ioctl() will fetch the terminal dimensions and update 'ws'
 
-    *rows = ws.ws_row;
-    *cols = ws.ws_col;
+    // CASE-1: ioctl() fails -> use fallback mechanism
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+        // Move the cursor to bottom right and get the cursor position
+        // NOTE: cursor indices start from 1 and not 0
+        // NOTE: we try to move the cursor to (999, 999) but it clamps to the border if it goes out of bounds
+        if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
+            return -1;
+        return get_cursor_pos(rows, cols);
+    }
 
-    return 0;  // success case
+    // CASE-2: ioctl() works
+    else {
+        *rows = ws.ws_row;
+        *cols = ws.ws_col;
+
+        return 0;
+    }
 }
 
 
@@ -162,7 +212,10 @@ void refresh_screen(void) {
 // Renders all visible rows in the editor viewport
 void draw_rows(void) {
     for (int y = 0; y < E.screenrows; y++) {
-        write(STDOUT_FILENO, "~\r\n", 3);
+        write(STDOUT_FILENO, "~", 1);
+
+        if (y < E.screenrows - 1)
+            write(STDOUT_FILENO, "\r\n", 2);
     }
 }
 
@@ -190,8 +243,8 @@ int main(void) {
     init_editor();
 
     while(true) {
-        process_keypress();
         refresh_screen();
+        process_keypress();
     }
 
     return 0;
