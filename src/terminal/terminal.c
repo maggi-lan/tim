@@ -14,6 +14,7 @@
 
 // EditorState maintains the editor’s runtime data and configuration
 typedef struct EditorState {
+    int cx, cy;               // cursor coordinate (zero-indexed)
     int screenrows;           // number of visible rows in the screen
     int screencols;           // number of visible columns in the screen
     struct termios old_term;  // terminal state before enabling raw mode
@@ -26,6 +27,15 @@ typedef struct AppendBuffer {
 } AppendBuffer;
 
 
+// Special values for specific keys
+enum EditorKey {
+    ARROW_UP = 1000,
+    ARROW_DOWN,
+    ARROW_RIGHT,
+    ARROW_LEFT,
+};
+
+
 // Global editor state
 EditorState E;
 
@@ -33,11 +43,12 @@ EditorState E;
 // Terminal operations
 void enable_raw(void);
 void disable_raw(void);
-char read_key(void);
+int read_key(void);
 int get_cursor_pos(int *row, int *col);
 int get_window_size(int *rows, int *cols);
 
 // Editor input operations
+void move_cursor(int key);
 void process_keypress(void);
 
 // Editor output operations
@@ -112,7 +123,7 @@ void disable_raw(void) {
 
 
 // Captures keypress from STDIN and return it
-char read_key(void) {
+int read_key(void) {
     int nread;
     char ch;
 
@@ -122,6 +133,32 @@ char read_key(void) {
         // If read fails
         if (nread == -1 && errno != EAGAIN)
             halt("read");
+    }
+
+    // Process escape sequences
+    if (ch == '\x1b') {
+        char seq[3];
+
+        if (read(STDIN_FILENO, &seq[0], 1) != 1)
+            return '\x1b';
+        if (read(STDIN_FILENO, &seq[1], 1) != 1)
+            return '\x1b';
+
+        if (seq[0] == '[') {
+            switch (seq[1]) {
+                // Cursor movement
+                case 'A':
+                    return ARROW_UP;
+                case 'B':
+                    return ARROW_DOWN;
+                case 'C':
+                    return ARROW_RIGHT;
+                case 'D':
+                    return ARROW_LEFT;
+            }
+        }
+
+        return '\x1b';
     }
 
     return ch;
@@ -196,9 +233,32 @@ int get_window_size(int *rows, int *cols) {
 }
 
 
+// Move cursor
+void move_cursor(int key) {
+    switch (key) {
+        case ARROW_LEFT:
+            if (E.cx != 0)
+                E.cx--;
+            break;
+        case ARROW_DOWN:
+            if (E.cy != E.screenrows - 1)
+                E.cy++;
+            break;
+        case ARROW_UP:
+            if (E.cy != 0)
+                E.cy--;
+            break;
+        case ARROW_RIGHT:
+            if (E.cx != E.screencols - 1)
+                E.cx++;
+            break;
+    }
+}
+
+
 // Captures input keypress and executes editor commands
 void process_keypress(void) {
-    char ch = read_key();
+    int ch = read_key();
 
     switch (ch) {
         // Quit command
@@ -206,6 +266,14 @@ void process_keypress(void) {
             write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
             write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
             exit(0);
+            break;
+
+        // Cursor movement
+        case ARROW_LEFT:
+        case ARROW_DOWN:
+        case ARROW_UP:
+        case ARROW_RIGHT:
+            move_cursor(ch);
             break;
     }
 }
@@ -220,7 +288,13 @@ void refresh_screen(void) {
 
     draw_rows(&ab);
 
-    ab_append(&ab, "\x1b[H", 3);     // this escape sequence moves cursor to top left again
+    // Move cursor to its original position
+    // NOTE: cursor coordinates (E.cx, E.cy) are start from index 0
+    // NOTE: cursor positions (used in escape sequences) start from index 1
+    char buffer[32];
+    snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", E.cy + 1, E.cx + 1);
+    ab_append(&ab, buffer, strlen(buffer));
+
     ab_append(&ab, "\x1b[?25h", 6);  // this escape sequence shows cursor
 
     write(STDOUT_FILENO, ab.buffer, ab.len);
@@ -301,6 +375,9 @@ void ab_free(AppendBuffer *ab) {
 
 // Initialize global editor state
 void init_editor(void) {
+    E.cx = 0;
+    E.cy = 0;
+
     // Fetch terminal screen dimensions and handle error
     if (get_window_size(&E.screenrows, &E.screencols) == -1)
         halt("get_window_size");
