@@ -4,6 +4,8 @@
 
 - currently working on making it better
 
+- this is just one of those attempts to reinvent the wheel for fun
+
 ### Build Instructions
 
 ```bash
@@ -14,18 +16,18 @@ cmake --build build
 ### Run Instructions
 
 ```bash
-cd build
-./tim <file>
+./build/tim <file>
 ```
 
 ### TODO
 
-- [X] rope api (the hardest part)
-- [X] file i/o api
-- [X] build system
-- [ ] terminal ui
+- [ ] terminal i/o handling
+- [ ] text viewing
+- [ ] normal text editing
 - [ ] modal editing
-- [ ] line numbers
-- [ ] search feature
-- [ ] syntax highlighting
-- [ ] undo/redo
+
+- May add these features in the future...
+    - line numbers
+    - search feature
+    - syntax highlighting
+    - undo/redo
