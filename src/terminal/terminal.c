@@ -2,20 +2,30 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
 # define CTRL_PLUS(ch) ((ch) & 0x1f)  // 'Ctrl+Ch'
 
 
-// Terminal state before enabling raw mode
-struct termios old_term;
+// EditorState maintains the editor’s runtime data and configuration
+typedef struct EditorState{
+    int screenrows;
+    int screencols;
+    struct termios old_term;  // terminal state before enabling raw mode
+} EditorState;
+
+
+// Global editor state
+EditorState E;
 
 
 // Terminal operations
 void enable_raw(void);
 void disable_raw(void);
 char read_key(void);
+int get_window_size(int *rows, int *cols);
 
 // Editor input operations
 void process_keypress(void);
@@ -23,6 +33,9 @@ void process_keypress(void);
 // Editor output operations
 void refresh_screen(void);
 void draw_rows(void);
+
+// Editor initialization
+void init_editor(void);
 
 // Helper functions
 void halt(char *str);
@@ -36,12 +49,12 @@ void halt(char *str);
 */
 void enable_raw(void) {
     // Save initial terminal state and load it after program execution ends
-    if (tcgetattr(STDIN_FILENO, &old_term) == -1) {
+    if (tcgetattr(STDIN_FILENO, &E.old_term) == -1) {
         halt("tcgetattr");
     }
     atexit(disable_raw);
 
-    struct termios raw_term = old_term;
+    struct termios raw_term = E.old_term;
 
     // a) disable Ctrl-S, Ctrl-Q
     // b) disable '\r' translation to '\n'
@@ -78,7 +91,7 @@ void enable_raw(void) {
 -> Does it by restoring the initial terminal state (which was in canonical mode)
 */
 void disable_raw(void) {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_term) == -1) {
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.old_term) == -1) {
         halt("tcsetattr");
     }
 }
@@ -98,6 +111,25 @@ char read_key(void) {
     }
 
     return ch;
+}
+
+
+/*
+-> Fetches the dimensions of the terminal screen
+-> Updates the values pointed to by 'rows' and 'cols'
+-> Returns 0 in case of success and -1 in case of error
+*/
+int get_window_size(int *rows, int *cols) {
+    struct winsize ws;
+
+    // ioctl() will fetch the terminal dimensions and update 'ws'
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
+        return -1;  // error case
+
+    *rows = ws.ws_row;
+    *cols = ws.ws_col;
+
+    return 0;  // success case
 }
 
 
@@ -129,9 +161,17 @@ void refresh_screen(void) {
 
 // Renders all visible rows in the editor viewport
 void draw_rows(void) {
-    for (int y = 0; y < 24; y++) {
+    for (int y = 0; y < E.screenrows; y++) {
         write(STDOUT_FILENO, "~\r\n", 3);
     }
+}
+
+
+// Initialize global editor state
+void init_editor(void) {
+    // Fetch terminal screen dimensions and handle error
+    if (get_window_size(&E.screenrows, &E.screencols) == -1)
+        halt("get_window_size");
 }
 
 
@@ -147,6 +187,7 @@ void halt(char *str) {
 
 int main(void) {
     enable_raw();
+    init_editor();
 
     while(true) {
         process_keypress();
