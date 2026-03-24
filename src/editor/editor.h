@@ -15,7 +15,6 @@ typedef struct EditorState {
     int cx, cy;               // cursor coordinate (zero-indexed)
     int screenrows;           // number of visible rows in the screen
     int screencols;           // number of visible columns in the screen
-    struct termios old_term;  // terminal state before enabling raw mode
 } EditorState;
 
 // AppendBuffer is a dynamic string type which supports appending

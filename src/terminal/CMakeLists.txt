@@ -10,8 +10,3 @@ target_sources(terminal
         FILES
             terminal.h
 )
-
-target_link_libraries(terminal
-    PRIVATE
-        editor
-)

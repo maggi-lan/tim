@@ -1,6 +1,8 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
 
+#include <termios.h>
+
 
 // Special values for some keys
 enum SpecialKeys {
@@ -16,14 +18,21 @@ enum SpecialKeys {
 };
 
 
-// Terminal core operations
+/*
+-> Global terminal state
+-> It's the state before enabling raw mode
+*/
+extern struct termios old_term;
+
+
+// Core operations
 void enable_raw(void);
 void disable_raw(void);
 int read_key(void);
 int get_cursor_pos(int *row, int *col);
 int get_window_size(int *rows, int *cols);
 
-// Terminal helpers
+// Helper functions
 void halt(char *str);
 int escape_parser(void);
 

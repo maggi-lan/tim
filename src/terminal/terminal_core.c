@@ -7,7 +7,9 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "editor.h"
+
+// State of terminal before enabling raw mode
+struct termios old_term;
 
 
 /*
@@ -16,12 +18,12 @@
 */
 void enable_raw(void) {
     // Save initial terminal state and load it after program execution ends
-    if (tcgetattr(STDIN_FILENO, &E.old_term) == -1) {
+    if (tcgetattr(STDIN_FILENO, &old_term) == -1) {
         halt("tcgetattr");
     }
     atexit(disable_raw);
 
-    struct termios raw_term = E.old_term;
+    struct termios raw_term = old_term;
 
     // a) disable Ctrl-S, Ctrl-Q
     // b) disable '\r' translation to '\n'
@@ -59,7 +61,7 @@ void enable_raw(void) {
 -> Does it by restoring the initial terminal state (which was in canonical mode)
 */
 void disable_raw(void) {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.old_term) == -1) {
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_term) == -1) {
         halt("tcsetattr");
     }
 }

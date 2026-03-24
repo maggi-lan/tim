@@ -3,6 +3,7 @@
 #include "../terminal/terminal.h"
 
 
+// Global editor state
 EditorState E;
 
 
