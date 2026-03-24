@@ -33,6 +33,11 @@ enum EditorKey {
     ARROW_DOWN,
     ARROW_RIGHT,
     ARROW_LEFT,
+    DEL_KEY,
+    HOME_KEY,
+    END_KEY,
+    PAGE_UP,
+    PAGE_DOWN,
 };
 
 
@@ -46,6 +51,7 @@ void disable_raw(void);
 int read_key(void);
 int get_cursor_pos(int *row, int *col);
 int get_window_size(int *rows, int *cols);
+void halt(char *str);
 
 // Editor input operations
 void move_cursor(int key);
@@ -61,9 +67,6 @@ void ab_free(AppendBuffer *ab);
 
 // Editor initialization
 void init_editor(void);
-
-// Helper functions
-void halt(char *str);
 
 
 
@@ -122,7 +125,7 @@ void disable_raw(void) {
 }
 
 
-// Captures keypress from STDIN and return it
+// Captures keypress from STDIN and returns it
 int read_key(void) {
     int nread;
     char ch;
@@ -135,7 +138,7 @@ int read_key(void) {
             halt("read");
     }
 
-    // Process escape sequences
+    // Parse escape sequences
     if (ch == '\x1b') {
         char seq[3];
 
@@ -145,16 +148,54 @@ int read_key(void) {
             return '\x1b';
 
         if (seq[0] == '[') {
+            if (seq[1] >= '0' && seq[1] <= '9') {
+                if (read(STDIN_FILENO, &seq[2], 1) != 1)
+                    return '\x1b';
+
+                if (seq[2] == '~') {
+                    switch (seq[1]) {
+                        case '1':
+                            return HOME_KEY;   // <esc>[1~
+                        case '3':
+                            return DEL_KEY;    // <esc>[3~
+                        case '4':
+                            return END_KEY;    // <esc>[4~
+                        case '5':
+                            return PAGE_UP;    // <esc>[5~
+                        case '6':
+                            return PAGE_DOWN;  // <esc>[6~
+                        case '7':
+                            return HOME_KEY;   // <esc>[7~
+                        case '8':
+                            return END_KEY;    // <esc>[8~
+                    }
+                }
+            }
+
+            else {
+                switch (seq[1]) {
+                    case 'A':
+                        return ARROW_UP;     // <esc>[A
+                    case 'B':
+                        return ARROW_DOWN;   // <esc>[B
+                    case 'C':
+                        return ARROW_RIGHT;  // <esc>[C
+                    case 'D':
+                        return ARROW_LEFT;   // <esc>[D
+                    case 'H':
+                        return HOME_KEY;     // <esc>[H
+                    case 'F':
+                        return END_KEY;      // <esc>[F
+                }
+            }
+        }
+
+        else if (seq[0] == 'O') {
             switch (seq[1]) {
-                // Cursor movement
-                case 'A':
-                    return ARROW_UP;
-                case 'B':
-                    return ARROW_DOWN;
-                case 'C':
-                    return ARROW_RIGHT;
-                case 'D':
-                    return ARROW_LEFT;
+                case 'H':
+                    return HOME_KEY;  // <esc>[OH
+                case 'F':
+                    return END_KEY;   // <esc>[OF
             }
         }
 
@@ -233,6 +274,16 @@ int get_window_size(int *rows, int *cols) {
 }
 
 
+// Exits process with an error message
+void halt(char *str) {
+    write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
+    write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
+
+    perror(str);
+    exit(1);
+}
+
+
 // Move cursor
 void move_cursor(int key) {
     switch (key) {
@@ -274,6 +325,27 @@ void process_keypress(void) {
         case ARROW_UP:
         case ARROW_RIGHT:
             move_cursor(ch);
+            break;
+
+        // Home/End key
+        case HOME_KEY:
+            E.cx = 0;
+            break;
+        case END_KEY:
+            E.cx = E.screencols - 1;
+            break;
+
+        // Page up/down
+        case PAGE_UP:
+        case PAGE_DOWN:
+            {
+                for (int i = 0; i < E.screenrows; i++) {
+                    if (ch == PAGE_UP)
+                        move_cursor(ARROW_UP);
+                    else if (ch == PAGE_DOWN)
+                        move_cursor(ARROW_DOWN);
+                }
+            }
             break;
     }
 }
@@ -381,16 +453,6 @@ void init_editor(void) {
     // Fetch terminal screen dimensions and handle error
     if (get_window_size(&E.screenrows, &E.screencols) == -1)
         halt("get_window_size");
-}
-
-
-// Exits process with an error message
-void halt(char *str) {
-    write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
-    write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
-
-    perror(str);
-    exit(1);
 }
 
 
