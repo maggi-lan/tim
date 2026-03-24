@@ -1,0 +1,74 @@
+#include "editor.h"
+
+#include <stdlib.h>
+#include <unistd.h>
+
+#include "../terminal/terminal.h"
+
+
+// Moves cursor position by updating cursor coordinates
+void move_cursor(int key) {
+    switch (key) {
+        // NOTE: cursor coordinates stored in 'E' use zero-based indices
+        case ARROW_LEFT:
+            if (E.cx != 0)
+                E.cx--;
+            break;
+        case ARROW_DOWN:
+            if (E.cy != E.screenrows - 1)
+                E.cy++;
+            break;
+        case ARROW_UP:
+            if (E.cy != 0)
+                E.cy--;
+            break;
+        case ARROW_RIGHT:
+            if (E.cx != E.screencols - 1)
+                E.cx++;
+            break;
+    }
+}
+
+
+// Captures input keypress and executes editor commands
+void process_keypress(void) {
+    int ch = read_key();
+
+    switch (ch) {
+        // Quit command
+        case CTRL_PLUS('q'):
+            write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
+            write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
+            exit(0);
+            break;
+
+        // Cursor movement
+        case ARROW_LEFT:
+        case ARROW_DOWN:
+        case ARROW_UP:
+        case ARROW_RIGHT:
+            move_cursor(ch);
+            break;
+
+        // Move cursor to start/end of line
+        case HOME_KEY:
+            E.cx = 0;
+            break;
+        case END_KEY:
+            E.cx = E.screencols - 1;
+            break;
+
+        // Scroll up/down
+        case PAGE_UP:
+        case PAGE_DOWN:
+            {
+                for (int i = 0; i < E.screenrows; i++) {
+                    if (ch == PAGE_UP)
+                        move_cursor(ARROW_UP);
+                    else if (ch == PAGE_DOWN)
+                        move_cursor(ARROW_DOWN);
+                }
+            }
+            break;
+    }
+}

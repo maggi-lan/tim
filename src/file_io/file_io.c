@@ -1,7 +1,8 @@
+#include "file_io.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "file_io.h"
 #include "rope.h"
 
 

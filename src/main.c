@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "rope.h"
 #include "file_io.h"
+#include "terminal.h"
+#include "editor.h"
 
 int main(int argc, char **argv) {
 	if (argc != 2) {
@@ -13,7 +16,14 @@ int main(int argc, char **argv) {
 	if (!root)
         return 1;
 
-	// TODO: idk, make it an editor or something
+    enable_raw();
+    init_editor();
+
+    while(true) {
+        refresh_screen();
+        process_keypress();
+    }
+    
 
 	free_rope(root);
 	return 0;

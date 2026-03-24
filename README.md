@@ -4,7 +4,7 @@
 
 - currently working on making it better
 
-- this is just one of those attempts to reinvent the wheel for fun
+- this is just one of those attempts of reinventing the wheel to learn something new
 
 ### Build Instructions
 
@@ -21,7 +21,6 @@ cmake --build build
 
 ### TODO
 
-- [ ] terminal i/o handling
 - [ ] text viewing
 - [ ] normal text editing
 - [ ] modal editing

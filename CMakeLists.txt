@@ -15,6 +15,8 @@ target_link_libraries(tim
     PRIVATE
         rope
         file_io
+        terminal
+        editor
 )
 
 
@@ -22,3 +24,5 @@ target_link_libraries(tim
 
 add_subdirectory(src/rope)
 add_subdirectory(src/file_io)
+add_subdirectory(src/terminal)
+add_subdirectory(src/editor)
