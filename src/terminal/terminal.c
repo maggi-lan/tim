@@ -1,0 +1,497 @@
+#include <errno.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <termios.h>
+#include <unistd.h>
+
+# define TIM_VERSION "0.0.1"
+# define CTRL_PLUS(ch) ((ch) & 0x1f)  // 'Ctrl+Ch'
+# define ABUF_INIT {NULL, 0}
+
+
+// EditorState maintains the editor’s runtime data and configuration
+typedef struct EditorState {
+    int cx, cy;               // cursor coordinate (zero-indexed)
+    int screenrows;           // number of visible rows in the screen
+    int screencols;           // number of visible columns in the screen
+    struct termios old_term;  // terminal state before enabling raw mode
+} EditorState;
+
+// AppendBuffer is a dynamic string type which supports appending
+typedef struct AppendBuffer {
+    char *buffer;  // buffer for the string
+    int len;       // length of the buffer
+} AppendBuffer;
+
+
+// Special values for some keys
+enum EditorKey {
+    ARROW_UP = 1000,
+    ARROW_DOWN,
+    ARROW_RIGHT,
+    ARROW_LEFT,
+    DEL_KEY,
+    HOME_KEY,
+    END_KEY,
+    PAGE_UP,
+    PAGE_DOWN,
+};
+
+
+// Global editor state
+EditorState E;
+
+
+// Terminal core operations
+void enable_raw(void);
+void disable_raw(void);
+int read_key(void);
+int get_cursor_pos(int *row, int *col);
+int get_window_size(int *rows, int *cols);
+
+// Terminal helpers
+void halt(char *str);
+int escape_parser(void);
+
+// Editor input operations
+void move_cursor(int key);
+void process_keypress(void);
+
+// Editor output operations
+void refresh_screen(void);
+void draw_rows(AppendBuffer *ab);
+
+// Editor append buffer
+void ab_append(AppendBuffer *ab, char *str, int len);
+void ab_free(AppendBuffer *ab);
+
+// Editor initialization
+void init_editor(void);
+
+
+
+
+/*
+-> Switches terminal from canonical mode to raw mode
+-> Does it by altering a couple of terminal attributes
+*/
+void enable_raw(void) {
+    // Save initial terminal state and load it after program execution ends
+    if (tcgetattr(STDIN_FILENO, &E.old_term) == -1) {
+        halt("tcgetattr");
+    }
+    atexit(disable_raw);
+
+    struct termios raw_term = E.old_term;
+
+    // a) disable Ctrl-S, Ctrl-Q
+    // b) disable '\r' translation to '\n'
+    // c) disable default behaviour of break conditions
+    // d) disable parity checking
+    // e) disable input byte stripping
+    raw_term.c_iflag &= ~(IXON | ICRNL | BRKINT | INPCK | ISTRIP);
+
+    // a) disable '\n' translation to '\r\n'
+    raw_term.c_oflag &= ~(OPOST);
+
+    // a) set character byte = 8 bits
+    raw_term.c_cflag |= ~(CS8);
+
+    // a) stop printing every keystroke
+    // b) read input byte by byte
+    // c) disable Ctrl-C, Ctrl-Z
+    // d) disable Ctrl-V
+    raw_term.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
+
+    // a) set minimum number of bytes of input needed before read() can return
+    // b) set maximum amount of time (in tenths of a second) to wait for read() to return
+    raw_term.c_cc[VMIN] = 0;
+    raw_term.c_cc[VTIME] = 1;  // basically adds a timeout for read()
+
+    // Load modified terminal state
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_term) == -1) {
+        halt("tcsetattr");
+    }
+}
+
+
+/*
+-> Switches terminal from raw mode to canonical mode
+-> Does it by restoring the initial terminal state (which was in canonical mode)
+*/
+void disable_raw(void) {
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.old_term) == -1) {
+        halt("tcsetattr");
+    }
+}
+
+
+// Captures keypress from STDIN and returns key/sequence code
+int read_key(void) {
+    int nread;
+    char ch;
+
+    // NOTE: read() has a timeout of 10 ms in raw mode
+    // Loop ends when exactly one character is read from STDIN
+    while ((nread = read(STDIN_FILENO, &ch, 1)) != 1) {
+        // If read fails
+        if (nread == -1 && errno != EAGAIN)
+            halt("read");
+    }
+
+    // Parse escape sequences and return the sequence code
+    if (ch == '\x1b')
+        return escape_parser();
+
+    return ch;
+}
+
+
+/*
+-> Fetches the current position (row, col) of the cursor
+-> Updates the values pointed by 'row' and 'col'
+-> Returns 0 in case of success and -1 in case of error
+-> Cursor positions start from 1 (not 0)
+*/
+int get_cursor_pos(int *row, int *col) {
+    char buffer[32];
+    unsigned int i = 0;
+
+    // Query for current cursor position
+    // NOTE: we can retrieve this result from STDIN
+    // NOTE: the result is an escape sequence that terminates with 'R'
+    // NOTE: example -> "\x1b[30;40R" -> row = 30, col = 40
+    if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
+        return -1;
+
+    // Parse through the result produced in STDIN and put it in 'buffer'
+    while (i < sizeof(buffer) - 1) {
+        if (read(STDIN_FILENO, &buffer[i], 1) != 1)
+            return -1;
+        if (buffer[i] == 'R')
+            break;
+        i++;
+    }
+    buffer[i] = '\0';
+    if (buffer[0] != '\x1b' || buffer[1] != '[')
+        return -1;
+
+    // Extract the values from the buffer
+    if (sscanf(&buffer[2], "%d;%d", row, col) != 2)
+        return -1;
+
+    return 0;
+}
+
+
+/*
+-> Fetches the dimensions of the terminal screen
+-> Updates the values pointed to by 'rows' and 'cols'
+-> Returns 0 in case of success and -1 in case of error
+*/
+int get_window_size(int *rows, int *cols) {
+    struct winsize ws;
+
+    // NOTE: ioctl() will fetch the terminal dimensions and update 'ws'
+
+    // CASE-1: ioctl() fails -> use fallback mechanism
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+        // Move the cursor to bottom right and get the cursor position
+        // NOTE: cursor positions start from 1 and not 0
+        // NOTE: we try to move the cursor to (999, 999) but it clamps to the border if it goes out of bounds
+        if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
+            return -1;
+        return get_cursor_pos(rows, cols);
+    }
+
+    // CASE-2: ioctl() works
+    else {
+        *rows = ws.ws_row;
+        *cols = ws.ws_col;
+
+        return 0;
+    }
+}
+
+
+// Exits process with an error message
+void halt(char *str) {
+    write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
+    write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
+
+    perror(str);
+    exit(1);
+}
+
+
+/*
+-> Parse through escape sequences and return the key code
+-> Assumes that the first character is already read from STDIN
+-> Returns an escape character in case error
+*/
+int escape_parser(void) {
+    char seq[3];
+
+    // Read second and third characters in the escape sequence
+    if (read(STDIN_FILENO, &seq[0], 1) != 1)
+        return '\x1b';
+    if (read(STDIN_FILENO, &seq[1], 1) != 1)
+        return '\x1b';
+
+    // CASE-1: second character is '['
+    if (seq[0] == '[') {
+        // SUB-CASE-A: escape sequence is 4 characters long
+        if (seq[1] >= '0' && seq[1] <= '9') {
+            // Read fourth character in the escape sequence
+            if (read(STDIN_FILENO, &seq[2], 1) != 1)
+                return '\x1b';
+
+            if (seq[2] == '~') {
+                switch (seq[1]) {
+                    case '1':
+                        return HOME_KEY;   // <esc>[1~
+                    case '3':
+                        return DEL_KEY;    // <esc>[3~
+                    case '4':
+                        return END_KEY;    // <esc>[4~
+                    case '5':
+                        return PAGE_UP;    // <esc>[5~
+                    case '6':
+                        return PAGE_DOWN;  // <esc>[6~
+                    case '7':
+                        return HOME_KEY;   // <esc>[7~
+                    case '8':
+                        return END_KEY;    // <esc>[8~
+                }
+            }
+        }
+
+        // SUB-CASE-B: escape sequence is 3 characters long
+        else {
+            switch (seq[1]) {
+                case 'A':
+                    return ARROW_UP;     // <esc>[A
+                case 'B':
+                    return ARROW_DOWN;   // <esc>[B
+                case 'C':
+                    return ARROW_RIGHT;  // <esc>[C
+                case 'D':
+                    return ARROW_LEFT;   // <esc>[D
+                case 'H':
+                    return HOME_KEY;     // <esc>[H
+                case 'F':
+                    return END_KEY;      // <esc>[F
+            }
+        }
+    }
+
+    // CASE-2: second character is 'O'
+    else if (seq[0] == 'O') {
+        switch (seq[1]) {
+            case 'H':
+                return HOME_KEY;  // <esc>OH
+            case 'F':
+                return END_KEY;   // <esc>OF
+        }
+    }
+
+    // Program reaches here if escape sequence is invalid
+    return '\x1b';
+}
+
+
+// Moves cursor position by updating cursor coordinates
+void move_cursor(int key) {
+    switch (key) {
+        // NOTE: cursor coordinates stored in 'E' use zero-based indices
+        case ARROW_LEFT:
+            if (E.cx != 0)
+                E.cx--;
+            break;
+        case ARROW_DOWN:
+            if (E.cy != E.screenrows - 1)
+                E.cy++;
+            break;
+        case ARROW_UP:
+            if (E.cy != 0)
+                E.cy--;
+            break;
+        case ARROW_RIGHT:
+            if (E.cx != E.screencols - 1)
+                E.cx++;
+            break;
+    }
+}
+
+
+// Captures input keypress and executes editor commands
+void process_keypress(void) {
+    int ch = read_key();
+
+    switch (ch) {
+        // Quit command
+        case CTRL_PLUS('q'):
+            write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
+            write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
+            exit(0);
+            break;
+
+        // Cursor movement
+        case ARROW_LEFT:
+        case ARROW_DOWN:
+        case ARROW_UP:
+        case ARROW_RIGHT:
+            move_cursor(ch);
+            break;
+
+        // Move cursor to start/end of line
+        case HOME_KEY:
+            E.cx = 0;
+            break;
+        case END_KEY:
+            E.cx = E.screencols - 1;
+            break;
+
+        // Scroll up/down
+        case PAGE_UP:
+        case PAGE_DOWN:
+            {
+                for (int i = 0; i < E.screenrows; i++) {
+                    if (ch == PAGE_UP)
+                        move_cursor(ARROW_UP);
+                    else if (ch == PAGE_DOWN)
+                        move_cursor(ARROW_DOWN);
+                }
+            }
+            break;
+    }
+}
+
+
+// Re-draws entire editor screen
+void refresh_screen(void) {
+    AppendBuffer ab = ABUF_INIT;
+
+    ab_append(&ab, "\x1b[?25l", 6);  // this escape sequence hides cursor
+    ab_append(&ab, "\x1b[H", 3);     // this escape sequence moves cursor to top left
+
+    draw_rows(&ab);
+
+    // Move cursor to its original position
+    // NOTE: cursor coordinates (E.cx, E.cy) are start from index 0
+    // NOTE: cursor positions (used in escape sequences) start from index 1
+    char buffer[32];
+    snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", E.cy + 1, E.cx + 1);
+    ab_append(&ab, buffer, strlen(buffer));
+
+    ab_append(&ab, "\x1b[?25h", 6);  // this escape sequence shows cursor
+
+    write(STDOUT_FILENO, ab.buffer, ab.len);
+    ab_free(&ab);
+}
+
+
+/*
+-> Renders all visible rows in the editor viewport
+-> It doesn't actually write to STDOUT
+-> It appends all content to the append buffer
+*/
+void draw_rows(AppendBuffer *ab) {
+    for (int y = 0; y < E.screenrows; y++) {
+        ab_append(ab, "\x1b[2K", 4);  // this escape sequence clears current line
+
+        // Choose welcome message line
+        char welcome[80];
+        int welcomelen;
+        int WELCOME_LINES = 5;
+        if (y == (E.screenrows / 3))
+            welcomelen = snprintf(welcome, sizeof(welcome),
+                "TIM - Text vIM");
+        else if (y == (E.screenrows / 3) + 1)
+            welcomelen = snprintf(welcome, sizeof(welcome),
+                " ");
+        else if (y == (E.screenrows / 3) + 2)
+            welcomelen = snprintf(welcome, sizeof(welcome),
+                "version %s", TIM_VERSION);
+        else if (y == (E.screenrows / 3) + 3)
+            welcomelen = snprintf(welcome, sizeof(welcome),
+                "by Mahilan Suki");
+        else if (y == (E.screenrows / 3) + 4)
+            welcomelen = snprintf(welcome, sizeof(welcome),
+                "Tim is a text editor inspired by Vim");
+
+        // Display welcome message
+        if ((y >= (E.screenrows / 3)) && (y <= (E.screenrows / 3) + WELCOME_LINES - 1)) {
+            // Truncate welcome message if needed
+            if (welcomelen > E.screencols)
+                welcomelen = E.screencols;
+
+            // Add padding to welcome message
+            int padding = (E.screencols - welcomelen) / 2;
+            if (padding) {
+                ab_append(ab, "~", 1);
+                padding--;
+            }
+            while (padding--)
+                ab_append(ab, " ", 1);
+
+            ab_append(ab, welcome, welcomelen);
+        }
+        // Display empty lines
+        else {
+            ab_append(ab, "~", 1);
+        }
+
+        // Avoid adding newline in the last row
+        if (y < E.screenrows - 1)
+            ab_append(ab, "\r\n", 2);
+    }
+}
+
+
+// Append a string to an AppendBuffer
+void ab_append(AppendBuffer *ab, char *str, int len) {
+    char *new = realloc(ab->buffer, ab->len + len);
+    // If realloc fails
+    if (new == NULL)
+        halt("ab_append");
+
+    memcpy(&new[ab->len], str, len);  // copy 'str' to 'new'
+
+    ab->buffer = new;
+    ab->len += len;
+}
+
+
+// Frees an AppendBuffer in memory
+void ab_free(AppendBuffer *ab) {
+    free(ab->buffer);
+}
+
+
+// Initialize global editor state
+void init_editor(void) {
+    // Set cursor position at top left
+    E.cx = 0;
+    E.cy = 0;
+
+    // Fetch terminal screen dimensions and handle error
+    if (get_window_size(&E.screenrows, &E.screencols) == -1)
+        halt("get_window_size");
+}
+
+
+int main(void) {
+    enable_raw();
+    init_editor();
+
+    while(true) {
+        refresh_screen();
+        process_keypress();
+    }
+
+    return 0;
+}
