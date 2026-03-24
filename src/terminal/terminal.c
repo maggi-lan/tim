@@ -27,7 +27,7 @@ typedef struct AppendBuffer {
 } AppendBuffer;
 
 
-// Special values for specific keys
+// Special values for some keys
 enum EditorKey {
     ARROW_UP = 1000,
     ARROW_DOWN,
@@ -45,13 +45,16 @@ enum EditorKey {
 EditorState E;
 
 
-// Terminal operations
+// Terminal core operations
 void enable_raw(void);
 void disable_raw(void);
 int read_key(void);
 int get_cursor_pos(int *row, int *col);
 int get_window_size(int *rows, int *cols);
+
+// Terminal helpers
 void halt(char *str);
+int escape_parser(void);
 
 // Editor input operations
 void move_cursor(int key);
@@ -108,6 +111,7 @@ void enable_raw(void) {
     raw_term.c_cc[VMIN] = 0;
     raw_term.c_cc[VTIME] = 1;  // basically adds a timeout for read()
 
+    // Load modified terminal state
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_term) == -1) {
         halt("tcsetattr");
     }
@@ -125,7 +129,7 @@ void disable_raw(void) {
 }
 
 
-// Captures keypress from STDIN and returns it
+// Captures keypress from STDIN and returns key/sequence code
 int read_key(void) {
     int nread;
     char ch;
@@ -138,69 +142,9 @@ int read_key(void) {
             halt("read");
     }
 
-    // Parse escape sequences
-    if (ch == '\x1b') {
-        char seq[3];
-
-        if (read(STDIN_FILENO, &seq[0], 1) != 1)
-            return '\x1b';
-        if (read(STDIN_FILENO, &seq[1], 1) != 1)
-            return '\x1b';
-
-        if (seq[0] == '[') {
-            if (seq[1] >= '0' && seq[1] <= '9') {
-                if (read(STDIN_FILENO, &seq[2], 1) != 1)
-                    return '\x1b';
-
-                if (seq[2] == '~') {
-                    switch (seq[1]) {
-                        case '1':
-                            return HOME_KEY;   // <esc>[1~
-                        case '3':
-                            return DEL_KEY;    // <esc>[3~
-                        case '4':
-                            return END_KEY;    // <esc>[4~
-                        case '5':
-                            return PAGE_UP;    // <esc>[5~
-                        case '6':
-                            return PAGE_DOWN;  // <esc>[6~
-                        case '7':
-                            return HOME_KEY;   // <esc>[7~
-                        case '8':
-                            return END_KEY;    // <esc>[8~
-                    }
-                }
-            }
-
-            else {
-                switch (seq[1]) {
-                    case 'A':
-                        return ARROW_UP;     // <esc>[A
-                    case 'B':
-                        return ARROW_DOWN;   // <esc>[B
-                    case 'C':
-                        return ARROW_RIGHT;  // <esc>[C
-                    case 'D':
-                        return ARROW_LEFT;   // <esc>[D
-                    case 'H':
-                        return HOME_KEY;     // <esc>[H
-                    case 'F':
-                        return END_KEY;      // <esc>[F
-                }
-            }
-        }
-
-        else if (seq[0] == 'O') {
-            switch (seq[1]) {
-                case 'H':
-                    return HOME_KEY;  // <esc>[OH
-                case 'F':
-                    return END_KEY;   // <esc>[OF
-            }
-        }
-
-        return '\x1b';
-    }
+    // Parse escape sequences and return the sequence code
+    if (ch == '\x1b')
+        return escape_parser();
 
     return ch;
 }
@@ -232,7 +176,6 @@ int get_cursor_pos(int *row, int *col) {
         i++;
     }
     buffer[i] = '\0';
-
     if (buffer[0] != '\x1b' || buffer[1] != '[')
         return -1;
 
@@ -257,7 +200,7 @@ int get_window_size(int *rows, int *cols) {
     // CASE-1: ioctl() fails -> use fallback mechanism
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
         // Move the cursor to bottom right and get the cursor position
-        // NOTE: cursor indices start from 1 and not 0
+        // NOTE: cursor positions start from 1 and not 0
         // NOTE: we try to move the cursor to (999, 999) but it clamps to the border if it goes out of bounds
         if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
             return -1;
@@ -284,9 +227,86 @@ void halt(char *str) {
 }
 
 
-// Move cursor
+/*
+-> Parse through escape sequences and return the key code
+-> Assumes that the first character is already read from STDIN
+-> Returns an escape character in case error
+*/
+int escape_parser(void) {
+    char seq[3];
+
+    // Read second and third characters in the escape sequence
+    if (read(STDIN_FILENO, &seq[0], 1) != 1)
+        return '\x1b';
+    if (read(STDIN_FILENO, &seq[1], 1) != 1)
+        return '\x1b';
+
+    // CASE-1: second character is '['
+    if (seq[0] == '[') {
+        // SUB-CASE-A: escape sequence is 4 characters long
+        if (seq[1] >= '0' && seq[1] <= '9') {
+            // Read fourth character in the escape sequence
+            if (read(STDIN_FILENO, &seq[2], 1) != 1)
+                return '\x1b';
+
+            if (seq[2] == '~') {
+                switch (seq[1]) {
+                    case '1':
+                        return HOME_KEY;   // <esc>[1~
+                    case '3':
+                        return DEL_KEY;    // <esc>[3~
+                    case '4':
+                        return END_KEY;    // <esc>[4~
+                    case '5':
+                        return PAGE_UP;    // <esc>[5~
+                    case '6':
+                        return PAGE_DOWN;  // <esc>[6~
+                    case '7':
+                        return HOME_KEY;   // <esc>[7~
+                    case '8':
+                        return END_KEY;    // <esc>[8~
+                }
+            }
+        }
+
+        // SUB-CASE-B: escape sequence is 3 characters long
+        else {
+            switch (seq[1]) {
+                case 'A':
+                    return ARROW_UP;     // <esc>[A
+                case 'B':
+                    return ARROW_DOWN;   // <esc>[B
+                case 'C':
+                    return ARROW_RIGHT;  // <esc>[C
+                case 'D':
+                    return ARROW_LEFT;   // <esc>[D
+                case 'H':
+                    return HOME_KEY;     // <esc>[H
+                case 'F':
+                    return END_KEY;      // <esc>[F
+            }
+        }
+    }
+
+    // CASE-2: second character is 'O'
+    else if (seq[0] == 'O') {
+        switch (seq[1]) {
+            case 'H':
+                return HOME_KEY;  // <esc>OH
+            case 'F':
+                return END_KEY;   // <esc>OF
+        }
+    }
+
+    // Program reaches here if escape sequence is invalid
+    return '\x1b';
+}
+
+
+// Moves cursor position by updating cursor coordinates
 void move_cursor(int key) {
     switch (key) {
+        // NOTE: cursor coordinates stored in 'E' use zero-based indices
         case ARROW_LEFT:
             if (E.cx != 0)
                 E.cx--;
@@ -327,7 +347,7 @@ void process_keypress(void) {
             move_cursor(ch);
             break;
 
-        // Home/End key
+        // Move cursor to start/end of line
         case HOME_KEY:
             E.cx = 0;
             break;
@@ -335,7 +355,7 @@ void process_keypress(void) {
             E.cx = E.screencols - 1;
             break;
 
-        // Page up/down
+        // Scroll up/down
         case PAGE_UP:
         case PAGE_DOWN:
             {
@@ -374,7 +394,11 @@ void refresh_screen(void) {
 }
 
 
-// Renders all visible rows in the editor viewport
+/*
+-> Renders all visible rows in the editor viewport
+-> It doesn't actually write to STDOUT
+-> It appends all content to the append buffer
+*/
 void draw_rows(AppendBuffer *ab) {
     for (int y = 0; y < E.screenrows; y++) {
         ab_append(ab, "\x1b[2K", 4);  // this escape sequence clears current line
@@ -416,10 +440,12 @@ void draw_rows(AppendBuffer *ab) {
 
             ab_append(ab, welcome, welcomelen);
         }
+        // Display empty lines
         else {
             ab_append(ab, "~", 1);
         }
 
+        // Avoid adding newline in the last row
         if (y < E.screenrows - 1)
             ab_append(ab, "\r\n", 2);
     }
@@ -429,10 +455,11 @@ void draw_rows(AppendBuffer *ab) {
 // Append a string to an AppendBuffer
 void ab_append(AppendBuffer *ab, char *str, int len) {
     char *new = realloc(ab->buffer, ab->len + len);
+    // If realloc fails
     if (new == NULL)
-        return;
+        halt("ab_append");
 
-    memcpy(&new[ab->len], str, len);
+    memcpy(&new[ab->len], str, len);  // copy 'str' to 'new'
 
     ab->buffer = new;
     ab->len += len;
@@ -447,6 +474,7 @@ void ab_free(AppendBuffer *ab) {
 
 // Initialize global editor state
 void init_editor(void) {
+    // Set cursor position at top left
     E.cx = 0;
     E.cy = 0;
 
