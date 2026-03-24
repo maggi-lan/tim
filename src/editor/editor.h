@@ -30,7 +30,7 @@ extern EditorState E;
 
 // Input operations
 void move_cursor(int key);
-void process_keypress(void);
+int process_keypress(void);
 
 // Output operations
 void refresh_screen(void);

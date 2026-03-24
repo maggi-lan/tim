@@ -30,8 +30,12 @@ void move_cursor(int key) {
 }
 
 
-// Captures input keypress and executes editor commands
-void process_keypress(void) {
+/*
+-> Captures input keypress and executes editor commands
+-> Returns -1 when quit command is called
+-> Returns 0 if everything works properly
+*/
+int process_keypress(void) {
     int ch = read_key();
 
     switch (ch) {
@@ -39,8 +43,7 @@ void process_keypress(void) {
         case CTRL_PLUS('q'):
             write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
             write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
-            exit(0);
-            break;
+            return -1;
 
         // Cursor movement
         case ARROW_LEFT:
@@ -71,4 +74,6 @@ void process_keypress(void) {
             }
             break;
     }
+
+    return 0;
 }

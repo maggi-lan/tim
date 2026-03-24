@@ -21,7 +21,8 @@ int main(int argc, char **argv) {
 
     while(true) {
         refresh_screen();
-        process_keypress();
+        if (process_keypress() == -1)
+            break;
     }
     
 
