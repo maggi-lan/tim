@@ -1,7 +1,6 @@
 #include "editor.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -19,8 +18,8 @@ void refresh_screen(void) {
     draw_rows(&ab);
 
     // Move cursor to its original position
-    // NOTE: cursor coordinates (E.cx, E.cy) are start from index 0
-    // NOTE: cursor positions (used in escape sequences) start from index 1
+    // NOTE: cursor coordinates (E.cx, E.cy) are zero-indexed
+    // NOTE: cursor positions (used in escape sequences) are one-indexed
     char buffer[32];
     snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", E.cy + 1, E.cx + 1);
     ab_append(&ab, buffer, strlen(buffer));
@@ -38,33 +37,32 @@ void refresh_screen(void) {
 -> It appends all content to the append buffer
 */
 void draw_rows(AppendBuffer *ab) {
-    for (int y = 0; y < E.screenrows; y++) {
+    for (int line = 0; line < E.screenrows; line++) {
         ab_append(ab, "\x1b[2K", 4);  // this escape sequence clears current line
 
         // Display content
-        if (y < E.numlines) {
-            int buffsize = E.screencols + 1;
-            char *buffer = calloc(buffsize, 1);
-            if (!buffer)
-                halt("draw_rows");
+        // NOTE: 'line' is zero-indexed
+        if (line < E.numlines) {
+            char *buffer = get_line_from_rope(E.rope, line);
 
-            copy_line_from_rope(E.rope, y, buffer, buffsize);
+            // Clamp buffer size if it exceeds screen width
+            int buffsize =  (string_length(buffer) > E.screencols) ? E.screencols : string_length(buffer);
 
-            ab_append(ab, buffer, strlen(buffer));
+            ab_append(ab, buffer, buffsize);
         }
 
         else {
             // Display welcome message
-            if (E.numlines == 0 && y == (E.screenrows / 3)) {
+            if (E.numlines == 0 && line == (E.screenrows / 3)) {
                 char welcome[80];
                 int welcomelen = snprintf(welcome, sizeof(welcome),
                     "TIM (Text vIM) -- version %s", TIM_VERSION);
 
-                // Truncate welcome message if needed
+                // Truncate message if needed
                 if (welcomelen > E.screencols)
                     welcomelen = E.screencols;
 
-                // Add padding to welcome message
+                // Add padding
                 int padding = (E.screencols - welcomelen) / 2;
                 if (padding) {
                     ab_append(ab, "~", 1);
@@ -75,6 +73,7 @@ void draw_rows(AppendBuffer *ab) {
 
                 ab_append(ab, welcome, welcomelen);
             }
+
             // Display empty lines
             else {
                 ab_append(ab, "~", 1);
@@ -82,7 +81,7 @@ void draw_rows(AppendBuffer *ab) {
         }
 
         // Avoid adding newline in the last row
-        if (y < E.screenrows - 1)
+        if (line < E.screenrows - 1)
             ab_append(ab, "\r\n", 2);
     }
 }

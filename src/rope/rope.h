@@ -72,7 +72,7 @@ int find_newline_pos(RopeNode *node, int newline_idx, int offset);
 int get_line_start(RopeNode *root, int line);
 int get_line_length(RopeNode *root, int line);
 int count_total_lines(RopeNode *root);
-void copy_line_from_rope(RopeNode *root, int line, char *buffer, int size);
+char *get_line_from_rope(RopeNode *root, int line);
 
 
 #endif

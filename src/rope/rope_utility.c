@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+#include "terminal.h"
+
 
 /*
 -> Returns the character at a given index recursively
@@ -138,6 +140,11 @@ int count_total_lines(RopeNode *root) {
 }
 
 
-void copy_line_from_rope(RopeNode *root, int line, char *buffer, int size) {
+/*
+-> Returns the string of text at line 'line' (zero-indexed)
+-> Resultant string will exclude newlines
+*/
+char *get_line_from_rope(RopeNode *root, int line) {
     // TODO
+    return NULL;
 }

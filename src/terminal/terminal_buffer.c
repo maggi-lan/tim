@@ -1,10 +1,8 @@
-#include "editor.h"
+#include "terminal.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#include "terminal.h"
 
 
 // Append a string to an AppendBuffer
