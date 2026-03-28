@@ -6,6 +6,9 @@
 #include "terminal.h"
 #include "editor.h"
 
+
+
+
 int main(int argc, char **argv) {
 	if (argc != 2) {
 		printf("Incorrect usage\nTry: ./tim <file>\n");
@@ -15,7 +18,7 @@ int main(int argc, char **argv) {
 	RopeNode *root = load_file(argv[1]);
 
     enable_raw();
-    init_editor();
+    init_editor(root);
 
     while(true) {
         refresh_screen();

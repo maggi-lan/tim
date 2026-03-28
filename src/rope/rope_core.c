@@ -1,7 +1,8 @@
 #include "rope.h"
 
-#include <stdio.h>
 #include <stdlib.h>
+
+#include "terminal.h"
 
 
 // Allocates a new rope node, attaches text, sets metadata and returns it
@@ -9,7 +10,7 @@ RopeNode *create_leaf(char *text) {
 	RopeNode *node = calloc(1, sizeof(RopeNode));	
 	// If calloc fails
 	if (node == NULL) {
-		perror("calloc");
+		halt("create_leaf");
 		exit(EXIT_FAILURE);
 	}
 
@@ -40,7 +41,7 @@ RopeNode *concat(RopeNode *left_subtree, RopeNode *right_subtree) {
 		RopeNode *parent_node = calloc(1, sizeof(RopeNode));
 		// If calloc fails
 		if (parent_node == NULL) {
-			perror("calloc");
+			halt("concat");
 			exit(EXIT_FAILURE);
 		}
 

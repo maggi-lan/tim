@@ -136,3 +136,8 @@ int count_total_lines(RopeNode *root) {
     // Ex: "Hello\n" -> 1 newline -> 2 lines (last line is an empty line)
     return root->newlines + 1;
 }
+
+
+void copy_line_from_rope(RopeNode *root, int line, char *buffer, int size) {
+    // TODO
+}

@@ -1,8 +1,9 @@
 #include "rope.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "terminal.h"
 
 
 // Returns true if the node has no children
@@ -102,7 +103,7 @@ char *string_copy(char *src) {
 	char *dst = malloc(string_length(src) + 1);  // plus one for null character
 	// If malloc fails
 	if (dst == NULL) {
-		perror("malloc");
+		halt("string_copy");
 		exit(EXIT_FAILURE);
 	}
 
@@ -123,7 +124,7 @@ char *substr_copy(char *start, int n) {
     char *dst = malloc(n + 1);  // plus one for null character
 	// If malloc fails
     if (dst == NULL) {
-		perror("malloc");
+		halt("substr_cpy");
 		exit(EXIT_FAILURE);
 	}
 

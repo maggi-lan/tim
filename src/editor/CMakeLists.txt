@@ -14,6 +14,7 @@ target_sources(editor
 )
 
 target_link_libraries(editor
-    PRIVATE
+    PUBLIC
+        rope
         terminal
 )

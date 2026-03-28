@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../terminal/terminal.h"
+#include "terminal.h"
 
 
 // Append a string to an AppendBuffer

@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <termios.h>
 
+#include "rope.h"
+
 # define TIM_VERSION "0.0.1"
 # define CTRL_PLUS(ch) ((ch) & 0x1f)  // 'Ctrl+Ch'
 # define ABUF_INIT {NULL, 0}
@@ -15,6 +17,9 @@ typedef struct EditorState {
     int cx, cy;               // cursor coordinate (zero-indexed)
     int screenrows;           // number of visible rows in the screen
     int screencols;           // number of visible columns in the screen
+
+    RopeNode *rope;           // data structure containing the text buffer
+    int numlines;             // number of lines in rope
 } EditorState;
 
 // AppendBuffer is a dynamic string type which supports appending
@@ -41,7 +46,7 @@ void ab_append(AppendBuffer *ab, char *str, int len);
 void ab_free(AppendBuffer *ab);
 
 // Editor initialization
-void init_editor(void);
+void init_editor(RopeNode *root);
 
 
 #endif

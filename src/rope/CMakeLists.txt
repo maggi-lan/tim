@@ -12,3 +12,8 @@ target_sources(rope
         FILES
             rope.h
 )
+
+target_link_libraries(rope
+    PUBLIC
+        terminal
+)

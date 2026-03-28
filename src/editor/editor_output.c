@@ -1,8 +1,12 @@
 #include "editor.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "terminal.h"
+#include "rope.h"
 
 
 // Re-draws entire editor screen
@@ -37,30 +41,44 @@ void draw_rows(AppendBuffer *ab) {
     for (int y = 0; y < E.screenrows; y++) {
         ab_append(ab, "\x1b[2K", 4);  // this escape sequence clears current line
 
-        // Display welcome message
-        if (y == (E.screenrows / 3)) {
-            char welcome[80];
-            int welcomelen = snprintf(welcome, sizeof(welcome),
-                "TIM (Text vIM) -- version %s", TIM_VERSION);
+        // Display content
+        if (y < E.numlines) {
+            int buffsize = E.screencols + 1;
+            char *buffer = calloc(buffsize, 1);
+            if (!buffer)
+                halt("draw_rows");
 
-            // Truncate welcome message if needed
-            if (welcomelen > E.screencols)
-                welcomelen = E.screencols;
+            copy_line_from_rope(E.rope, y, buffer, buffsize);
 
-            // Add padding to welcome message
-            int padding = (E.screencols - welcomelen) / 2;
-            if (padding) {
-                ab_append(ab, "~", 1);
-                padding--;
-            }
-            while (padding--)
-                ab_append(ab, " ", 1);
-
-            ab_append(ab, welcome, welcomelen);
+            ab_append(ab, buffer, strlen(buffer));
         }
-        // Display empty lines
+
         else {
-            ab_append(ab, "~", 1);
+            // Display welcome message
+            if (E.numlines == 0 && y == (E.screenrows / 3)) {
+                char welcome[80];
+                int welcomelen = snprintf(welcome, sizeof(welcome),
+                    "TIM (Text vIM) -- version %s", TIM_VERSION);
+
+                // Truncate welcome message if needed
+                if (welcomelen > E.screencols)
+                    welcomelen = E.screencols;
+
+                // Add padding to welcome message
+                int padding = (E.screencols - welcomelen) / 2;
+                if (padding) {
+                    ab_append(ab, "~", 1);
+                    padding--;
+                }
+                while (padding--)
+                    ab_append(ab, " ", 1);
+
+                ab_append(ab, welcome, welcomelen);
+            }
+            // Display empty lines
+            else {
+                ab_append(ab, "~", 1);
+            }
         }
 
         // Avoid adding newline in the last row

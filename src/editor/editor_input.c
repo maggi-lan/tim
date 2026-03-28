@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "../terminal/terminal.h"
+#include "terminal.h"
 
 
 // Moves cursor position by updating cursor coordinates

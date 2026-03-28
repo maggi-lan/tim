@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "rope.h"
+#include "terminal.h"
 
 
 /*
@@ -21,10 +22,8 @@ RopeNode *load_file(char *filename) {
         if (errno == ENOENT)
             return NULL;
         // CASE-B: can't load existing file -> exit program
-        else {
-            perror("Error opening file");
-            exit(EXIT_FAILURE);
-        }
+        else
+            halt("load_file");
     }
 
     RopeNode *root = NULL;
@@ -75,7 +74,7 @@ bool save_file(RopeNode *root, char *filename) {
 	FILE *fp = fopen(filename, "w");
     // Error handling
 	if (!fp) {
-		perror("Error saving file");
+		halt("save_file");
 		return false;
 	}
 

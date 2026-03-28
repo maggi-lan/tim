@@ -13,4 +13,5 @@ target_sources(file_io
 target_link_libraries(file_io
     PUBLIC
         rope
+        terminal
 )
