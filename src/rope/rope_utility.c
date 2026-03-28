@@ -145,6 +145,20 @@ int count_total_lines(RopeNode *root) {
 -> Resultant string will exclude newlines
 */
 char *get_line_from_rope(RopeNode *root, int line) {
-    // TODO
-    return NULL;
+    // Edge case
+    if (root == NULL)
+        return NULL;
+
+    int len = get_line_length(root, line);
+    int start = get_line_start(root, line);
+
+    char *result = calloc(len + 1, 1);
+    // Error handling
+    if (!result)
+        halt("get_line_from_rope");
+
+    for (int idx = 0; idx < len; idx++)
+        result[idx] = char_at(root, start + idx);
+
+    return result;
 }

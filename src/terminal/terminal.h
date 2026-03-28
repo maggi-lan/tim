@@ -3,8 +3,6 @@
 
 #include <termios.h>
 
-# define ABUF_INIT {NULL, 0}
-
 
 // Special values for some keys
 enum SpecialKeys {
@@ -26,12 +24,6 @@ enum SpecialKeys {
 */
 extern struct termios old_term;
 
-// AppendBuffer is a dynamic string type which supports appending
-typedef struct AppendBuffer {
-    char *buffer;  // buffer for the string
-    int len;       // length of the buffer
-} AppendBuffer;
-
 
 // Core operations
 void enable_raw(void);
@@ -43,10 +35,6 @@ int get_window_size(int *rows, int *cols);
 // Helper functions
 void halt(char *str);
 int escape_parser(void);
-
-// Append buffer operations
-void ab_append(AppendBuffer *ab, char *str, int len);
-void ab_free(AppendBuffer *ab);
 
 
 #endif

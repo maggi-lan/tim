@@ -1,6 +1,7 @@
 #include "editor.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -49,6 +50,7 @@ void draw_rows(AppendBuffer *ab) {
             int buffsize =  (string_length(buffer) > E.screencols) ? E.screencols : string_length(buffer);
 
             ab_append(ab, buffer, buffsize);
+            free(buffer);
         }
 
         else {

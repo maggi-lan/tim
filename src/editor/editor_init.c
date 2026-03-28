@@ -18,6 +18,7 @@ void init_editor(RopeNode *root) {
     if (get_window_size(&E.screenrows, &E.screencols) == -1)
         halt("get_window_size");
 
+    E.rope = root;
     if (root == NULL)
         E.numlines = 0;
     else
