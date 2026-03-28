@@ -13,8 +13,6 @@ int main(int argc, char **argv) {
 	}
 
 	RopeNode *root = load_file(argv[1]);
-	if (!root)
-        return 1;
 
     enable_raw();
     init_editor();
@@ -24,7 +22,6 @@ int main(int argc, char **argv) {
         if (process_keypress() == -1)
             break;
     }
-    
 
 	free_rope(root);
 	return 0;
