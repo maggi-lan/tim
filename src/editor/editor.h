@@ -25,7 +25,7 @@ typedef struct EditorState {
 
 // AppendBuffer is a dynamic string type which supports appending
 typedef struct AppendBuffer {
-    char *buffer;  // buffer for the string
+    char *buffer;  // buffer for the string (doesn't include null terminator)
     int bufflen;   // number of items occupied in the buffer
     int capacity;  // max capacity of the buffer
 } AppendBuffer;

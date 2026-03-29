@@ -28,7 +28,7 @@ void refresh_screen(void) {
     ab_append(&ab, "\x1b[?25h", 6);  // this escape sequence shows cursor
 
     // NOTE: buffer has a null terminator in it and don't write it
-    write(STDOUT_FILENO, ab.buffer, ab.bufflen - 1);
+    write(STDOUT_FILENO, ab.buffer, ab.bufflen);
     ab_free(&ab);
 }
 
