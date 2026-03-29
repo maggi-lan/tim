@@ -15,16 +15,17 @@ void ab_append(AppendBuffer *ab, char *str, int len) {
         return;
 
     // 'ab' has an empty buffer -> initialize buffer
-    if (ab->bufflen == 0) {
+    if (ab->buffer == NULL) {
         ab->buffer = calloc(len + 1, 1);
         // Error handling
         if (ab->buffer == NULL)
             halt("ab_append");
 
-        memcpy(ab->buffer, str, len + 1);  // copy 'str' to buffer
+        memcpy(ab->buffer, str, len);  // copy 'str' to buffer
 
-        ab->bufflen = ab->capacity;
         ab->capacity = len + 1;
+        ab->bufflen = ab->capacity;
+        ab->buffer[len] = '\0';      // terminate with null character
     }
 
     else {
@@ -43,8 +44,9 @@ void ab_append(AppendBuffer *ab, char *str, int len) {
         }
 
         // Append 'str' to buffer
-        memcpy(&ab->buffer[ab->bufflen - 1], str, len + 1);
+        memcpy(&ab->buffer[ab->bufflen - 1], str, len);
         ab->bufflen += len;
+        ab->buffer[ab->bufflen - 1] = '\0';
     }
 }
 
@@ -52,4 +54,7 @@ void ab_append(AppendBuffer *ab, char *str, int len) {
 // Frees an AppendBuffer in memory
 void ab_free(AppendBuffer *ab) {
     free(ab->buffer);
+    ab->buffer = NULL;
+    ab->bufflen = 0;
+    ab->capacity = 0;
 }
