@@ -11,6 +11,8 @@
 
 // Re-draws entire editor screen
 void refresh_screen(void) {
+    scroll();
+
     AppendBuffer ab = ABUF_INIT;
 
     ab_append(&ab, "\x1b[?25l", 6);  // this escape sequence hides cursor
@@ -22,7 +24,7 @@ void refresh_screen(void) {
     // NOTE: cursor coordinates (E.cx, E.cy) are zero-indexed
     // NOTE: cursor positions (used in escape sequences) are one-indexed
     char buffer[32];
-    snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", E.cy + 1, E.cx + 1);
+    snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, E.cx + 1);
     ab_append(&ab, buffer, strlen(buffer));
 
     ab_append(&ab, "\x1b[?25h", 6);  // this escape sequence shows cursor
@@ -41,10 +43,13 @@ void draw_rows(AppendBuffer *ab) {
     for (int line = 0; line < E.screenrows; line++) {
         ab_append(ab, "\x1b[2K", 4);  // this escape sequence clears current line
 
+        // NOTE: 'line' is zero-indexed and it is the index of a line in the screen
+        // NOTE: 'filerow' is also zero-indexed and it is the index of a line in the file
+        int filerow = line + E.rowoff;
+
         // Display content
-        // NOTE: 'line' is zero-indexed
-        if (line < E.numlines) {
-            char *buffer = get_line_from_rope(E.rope, line);
+        if (filerow < E.numlines) {
+            char *buffer = get_line_from_rope(E.rope, filerow);
 
             // Clamp buffer size if it exceeds screen width
             int buffsize =  (string_length(buffer) > E.screencols) ? E.screencols : string_length(buffer);
@@ -86,4 +91,16 @@ void draw_rows(AppendBuffer *ab) {
         if (line < E.screenrows - 1)
             ab_append(ab, "\r\n", 2);
     }
+}
+
+
+// Update E.rowoff to scroll up/down
+void scroll(void) {
+    // Scroll up
+    if (E.cy < E.rowoff)
+        E.rowoff = E.cy;
+
+    // Scroll down
+    else if (E.cy >= E.rowoff + E.screenrows)
+        E.rowoff = E.cy - E.screenrows + 1;
 }

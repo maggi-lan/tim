@@ -15,9 +15,10 @@
 
 // EditorState maintains the editor’s runtime data and configuration
 typedef struct EditorState {
-    int cx, cy;               // cursor coordinate (zero-indexed)
+    int cx, cy;               // cursor coordinate (zero-indexed) -> location of cursor in the file
     int screenrows;           // number of visible rows in the screen
     int screencols;           // number of visible columns in the screen
+    int rowoff;               // row offset (zero-indexed)
 
     RopeNode *rope;           // data structure containing the text buffer
     int numlines;             // number of lines in rope
@@ -41,6 +42,7 @@ int process_keypress(void);
 // Output operations
 void refresh_screen(void);
 void draw_rows(AppendBuffer *ab);
+void scroll(void);
 
 // Append buffer operations
 void ab_append(AppendBuffer *ab, char *str, int len);

@@ -1,6 +1,5 @@
 #include "editor.h"
 
-#include <stdlib.h>
 #include <unistd.h>
 
 #include "terminal.h"
@@ -9,13 +8,13 @@
 // Moves cursor position by updating cursor coordinates
 void move_cursor(int key) {
     switch (key) {
-        // NOTE: cursor coordinates stored in 'E' use zero-based indices
+        // NOTE: cursor coordinates stored in 'E' use zero-indexed
         case ARROW_LEFT:
             if (E.cx != 0)
                 E.cx--;
             break;
         case ARROW_DOWN:
-            if (E.cy != E.screenrows - 1)
+            if (E.cy != E.numlines - 1)
                 E.cy++;
             break;
         case ARROW_UP:
