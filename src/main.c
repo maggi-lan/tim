@@ -26,6 +26,6 @@ int main(int argc, char **argv) {
             break;
     }
 
-	free_rope(root);
+	free_rope(E.rope);
 	return 0;
 }

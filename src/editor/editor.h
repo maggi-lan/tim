@@ -7,7 +7,7 @@
 
 #include "rope.h"
 
-# define ABUF_INIT {NULL, 0}
+# define ABUF_INIT {NULL, 0, 0}
 
 # define TIM_VERSION "0.0.1"
 # define CTRL_PLUS(ch) ((ch) & 0x1f)  // 'Ctrl+Ch'
@@ -26,7 +26,8 @@ typedef struct EditorState {
 // AppendBuffer is a dynamic string type which supports appending
 typedef struct AppendBuffer {
     char *buffer;  // buffer for the string
-    int len;       // length of the buffer
+    int bufflen;   // number of items occupied in the buffer
+    int capacity;  // max capacity of the buffer
 } AppendBuffer;
 
 
