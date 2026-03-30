@@ -29,6 +29,10 @@ void move_cursor(int key) {
                 E.cx++;
             break;
     }
+
+    // Snaps cursor to end of line in edge cases
+    if (E.cx > rowsize)
+        E.cx = rowsize - 1;
 }
 
 
