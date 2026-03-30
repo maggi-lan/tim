@@ -13,6 +13,7 @@ void init_editor(RopeNode *root) {
     // Set cursor position at top left
     E.cx = 0;
     E.cy = 0;
+    E.snapx = 0;
     E.rowoff = 0;
     E.coloff = 0;
 

@@ -16,6 +16,7 @@
 // EditorState maintains the editor’s runtime data and configuration
 typedef struct EditorState {
     int cx, cy;               // cursor coordinate (zero-indexed) -> location of cursor in the file
+    int snapx;                // cursor 'x' coordinate to snap back to if possible
     int screenrows;           // number of visible rows in the screen
     int screencols;           // number of visible columns in the screen
     int rowoff;               // row offset (zero-indexed)

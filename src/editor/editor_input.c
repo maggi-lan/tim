@@ -13,8 +13,10 @@ void move_cursor(int key) {
     switch (key) {
         // NOTE: cursor coordinates stored in 'E' use zero-indexed
         case ARROW_LEFT:
-            if (E.cx != 0)
+            if (E.cx != 0) {
                 E.cx--;
+                E.snapx = E.cx;
+            }
             break;
         case ARROW_DOWN:
             if (E.cy != E.numlines - 1)
@@ -25,15 +27,19 @@ void move_cursor(int key) {
                 E.cy--;
             break;
         case ARROW_RIGHT:
-            if (E.cx < rowsize)
+            if (E.cx < rowsize) {
                 E.cx++;
+                E.snapx = E.cx;
+            }
             break;
     }
 
-    // Snaps cursor to end of line in edge cases
+    // Snaps cursor
     rowsize =  get_line_length(E.rope, E.cy);
-    if (E.cx > rowsize)
-        E.cx = rowsize;
+    if (E.snapx > rowsize)
+        E.cx = rowsize;  // snap to end of line
+    else
+        E.cx = E.snapx;  // snap back to original position
 }
 
 
