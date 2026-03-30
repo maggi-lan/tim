@@ -31,8 +31,9 @@ void move_cursor(int key) {
     }
 
     // Snaps cursor to end of line in edge cases
+    rowsize =  get_line_length(E.rope, E.cy);
     if (E.cx > rowsize)
-        E.cx = rowsize - 1;
+        E.cx = rowsize;
 }
 
 

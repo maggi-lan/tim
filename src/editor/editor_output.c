@@ -23,6 +23,7 @@ void refresh_screen(void) {
     // Move cursor to its original position
     // NOTE: cursor coordinates (E.cx, E.cy) are zero-indexed
     // NOTE: cursor positions (used in escape sequences) are one-indexed
+    // NOTE: "\x1b[X;YH" moves cursor to position (X, Y)
     char buffer[32];
     snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, (E.cx - E.coloff) + 1);
     ab_append(&ab, buffer, strlen(buffer));
