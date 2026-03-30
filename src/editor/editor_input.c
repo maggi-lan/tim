@@ -3,10 +3,13 @@
 #include <unistd.h>
 
 #include "terminal.h"
+#include "rope.h"
 
 
 // Moves cursor position by updating cursor coordinates
 void move_cursor(int key) {
+    int rowsize =  get_line_length(E.rope, E.cy);
+
     switch (key) {
         // NOTE: cursor coordinates stored in 'E' use zero-indexed
         case ARROW_LEFT:
@@ -22,7 +25,7 @@ void move_cursor(int key) {
                 E.cy--;
             break;
         case ARROW_RIGHT:
-            if (E.cx != E.screencols - 1)
+            if (E.cx < rowsize)
                 E.cx++;
             break;
     }

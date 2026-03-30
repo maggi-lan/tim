@@ -14,6 +14,7 @@ void init_editor(RopeNode *root) {
     E.cx = 0;
     E.cy = 0;
     E.rowoff = 0;
+    E.coloff = 0;
 
     // Fetch terminal screen dimensions and handle errors
     if (get_window_size(&E.screenrows, &E.screencols) == -1)

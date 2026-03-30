@@ -19,6 +19,7 @@ typedef struct EditorState {
     int screenrows;           // number of visible rows in the screen
     int screencols;           // number of visible columns in the screen
     int rowoff;               // row offset (zero-indexed)
+    int coloff;               // column offset (zero-indexed)
 
     RopeNode *rope;           // data structure containing the text buffer
     int numlines;             // number of lines in rope
