@@ -6,35 +6,6 @@
 
 
 /*
--> Returns the character at a given index recursively
--> Usage: pass in the root node and zero-based index
--> Returns null character if index goes out of bounds
-*/
-char char_at(RopeNode *node, int idx) {
-    // Edge case
-    if (node == NULL)
-        return '\0';
-
-    // BASE CASE: leaf nodes -> return the character at 'idx'
-    if (is_leaf(node)) {
-        // Out of bounds handling
-        if (idx < 0 || idx >= node->weight)
-            return '\0';
-
-        return node->str[idx];
-    }
-
-    // CASE-1: 'idx' lies in the left subtree -> recurse to the left subtree
-    if (idx < node->weight)
-        return char_at(node->left, idx);
-
-    // CASE-2: 'idx' lies in the right subtree -> recurse to the right subtree
-    else
-        return char_at(node->right, idx - node->weight);  // adjust index
-}
-
-
-/*
 -> Returns the text index (zero-based) of the Nth newline character (zero-based) recursively
 -> Returns -1 if newline_idx is invalid
 */
@@ -151,14 +122,114 @@ char *get_line_from_rope(RopeNode *root, int line) {
 
     int len = get_line_length(root, line);
     int start = get_line_start(root, line);
+    int offset;
+
+    RopeNode *leaf = leaf_at(root, start, &offset);
+    // Error handling
+    if (!leaf && len != 0)
+        halt("get_line_from_rope");
 
     char *result = calloc(len + 1, 1);
     // Error handling
     if (!result)
         halt("get_line_from_rope");
 
-    for (int idx = 0; idx < len; idx++)
-        result[idx] = char_at(root, start + idx);
+    for (int idx = 0; idx < len; idx++) {
+        if (offset >= leaf->weight) {
+            leaf = next_leaf(leaf);
+            // Error handling
+            if (!leaf)
+                halt("get_line_from_rope");
+
+            offset = 0;
+        }
+
+        result[idx] = leaf->str[offset];
+        offset++;
+    }
 
     return result;
+}
+
+
+/*
+-> Returns the leaf node containing the character at a given index using recursion
+-> Also updates 'offset' with the local offset of the character within the node
+-> Usage: pass in the root node, zero-based index and a pointer to the variable storing the offset
+-> Returns NULL in case of error
+*/
+RopeNode *leaf_at(RopeNode *node, int idx, int *offset) {
+    // Edge case
+    if (node == NULL)
+        return NULL;
+
+    // BASE CASE: leaf nodes -> return the character at 'idx'
+    if (is_leaf(node)) {
+        // Out of bounds handling
+        if (idx < 0 || idx >= node->weight)
+            return NULL;
+
+        *offset = idx;
+
+        return node;
+    }
+
+    // CASE-1: 'idx' lies in the left subtree -> recurse to the left subtree
+    if (idx < node->weight)
+        return leaf_at(node->left, idx, offset);
+
+    // CASE-2: 'idx' lies in the right subtree -> recurse to the right subtree
+    else
+        return leaf_at(node->right, idx - node->weight, offset);  // adjust index
+}
+
+
+/*
+-> Returns the next leaf in a tree
+-> Returns NULL in case of error
+*/
+RopeNode *next_leaf(RopeNode *leaf) {
+    // Edge case
+    if (!leaf || !is_leaf(leaf))
+        return NULL;
+
+    RopeNode *next = successor_node(leaf);
+
+    while (next != NULL && !is_leaf(next))
+        next = successor_node(next);
+
+    return next;
+}
+
+
+/*
+-> Returns the inorder successor of a node in a rope
+-> Returns NULL if successor doesn't exist
+*/
+RopeNode *successor_node(RopeNode *node) {
+    // Edge case
+    if (!node)
+        return NULL;
+
+    // CASE-A: 'node' has a right child
+    if (node->right) {
+        // Go to the right child and go left as much as possible
+        node = node->right;
+        while (node->left != NULL)
+            node = node->left;
+
+        return node;
+    }
+
+    // CASE-B: 'node' has no right child
+    else {
+        // Walk up the rope until you came from a left child
+        RopeNode *parent = node->parent;
+        while (parent != NULL && parent->left != node) {
+            node = parent;
+            parent = node->parent;
+        }
+
+        return parent;
+    }
 }

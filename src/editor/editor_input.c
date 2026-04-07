@@ -34,7 +34,7 @@ void move_cursor(int key) {
             break;
     }
 
-    // Snaps cursor
+    // Snaps cursor (this has effect only on vertical movement)
     rowsize =  get_line_length(E.rope, E.cy);
     if (E.snapx > rowsize)
         E.cx = rowsize;  // snap to end of line

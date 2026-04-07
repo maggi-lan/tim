@@ -67,12 +67,14 @@ char *string_copy(char *src);
 char *substr_copy(char *start, int n);
 
 // Utility functions
-char char_at(RopeNode *root, int idx);
 int find_newline_pos(RopeNode *node, int newline_idx, int offset);
 int get_line_start(RopeNode *root, int line);
 int get_line_length(RopeNode *root, int line);
 int count_total_lines(RopeNode *root);
 char *get_line_from_rope(RopeNode *root, int line);
+RopeNode *leaf_at(RopeNode *node, int idx, int *offset);
+RopeNode *next_leaf(RopeNode *node);
+RopeNode *successor_node(RopeNode *node);
 
 
 #endif
