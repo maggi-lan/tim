@@ -140,7 +140,7 @@ void split(RopeNode *node, int idx, RopeNode **left, RopeNode **right) {
 		// Split the left subtree
 		split(node->left, idx, &L, &R);
 
-		// concatenate the right portion of the split of left subtree with right portion of current split
+		// Concatenate the right portion of the split of left subtree with right portion of current split
 		*right = concat(R, node->right);
 
 		// Update 'left' with the left portion of the split of left subtree
@@ -155,7 +155,7 @@ void split(RopeNode *node, int idx, RopeNode **left, RopeNode **right) {
 		// Split the right subtree
 		split(node->right, idx - node->weight, &L, &R);  // NOTE: index changes when we recurse to right subtree
 
-		// concatenate the left portion of the split of right subtree with left portion of current split
+		// Concatenate the left portion of the split of right subtree with left portion of current split
 		*left = concat(node->left, L);
 
 		// Update 'right' with the right portion of the split of right subtree
