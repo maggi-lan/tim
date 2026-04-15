@@ -51,18 +51,10 @@ void draw_rows(AppendBuffer *ab) {
 
         // Display content
         if (filerow < E.numlines) {
-            char *buffer = get_line_from_rope(E.rope, filerow);
+            char *buffer = get_segment_from_rope(E.rope, filerow, E.coloff, E.screencols);
+            int bufflen = string_length(buffer);
 
-            // 'bufflen': length of buffer to be displayed on screen
-            int bufflen = string_length(buffer) - E.coloff;
-
-            // Clamp bufflen
-            if (bufflen < 0)
-                bufflen = 0;
-            if (bufflen > E.screencols)
-                bufflen = E.screencols;
-
-            ab_append(ab, &buffer[E.coloff], bufflen);
+            ab_append(ab, &buffer[0], bufflen);
             free(buffer);
         }
 

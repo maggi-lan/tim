@@ -112,34 +112,42 @@ int count_total_lines(RopeNode *root) {
 
 
 /*
--> Returns the string of text at line 'line' (zero-indexed)
+-> Returns a segment of text at line 'line' (zero-indexed)
+-> 'start': starting index (zero-indexed) of the segment in the line
+-> 'maxlen': maximum length of the segment
 -> Resultant string will exclude newlines
 */
-char *get_line_from_rope(RopeNode *root, int line) {
+char *get_segment_from_rope(RopeNode *root, int line, int start, int maxlen) {
     // Edge case
     if (root == NULL)
         return NULL;
 
-    int len = get_line_length(root, line);
-    int start = get_line_start(root, line);
+    int line_len = get_line_length(root, line);
+    // Edge case
+    if (start >= line_len || maxlen == 0)
+        return NULL;
+
+    int len = MIN(maxlen, line_len - start);
+    int lstart = get_line_start(root, line) + start;
     int offset;
 
-    RopeNode *leaf = leaf_at(root, start, &offset);
+    RopeNode *leaf = leaf_at(root, lstart, &offset);
     // Error handling
     if (!leaf && len != 0)
-        halt("get_line_from_rope");
+        halt("get_segment_from_rope");
 
     char *result = calloc(len + 1, 1);
     // Error handling
     if (!result)
-        halt("get_line_from_rope");
+        halt("get_segment_from_rope");
 
+    // Walk through the leaves to fetch segment
     for (int idx = 0; idx < len; idx++) {
         if (offset >= leaf->weight) {
             leaf = next_leaf(leaf);
             // Error handling
             if (!leaf)
-                halt("get_line_from_rope");
+                halt("get_segment_from_rope");
 
             offset = 0;
         }
