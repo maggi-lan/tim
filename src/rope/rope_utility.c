@@ -112,7 +112,7 @@ int count_total_lines(RopeNode *root) {
 
 
 /*
--> Returns a segment of text at line 'line' (zero-indexed)
+-> Returns a segment of text at Nth line (zero-indexed)
 -> 'start': starting index (zero-indexed) of the segment in the line
 -> 'maxlen': maximum length of the segment
 -> Resultant string will exclude newlines

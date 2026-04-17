@@ -17,7 +17,7 @@
 typedef struct EditorState {
     int cx, cy;               // cursor coordinate (zero-indexed) -> location of cursor in the file
     int rx;                   // rendered x-coordinate
-    int snapx;                // cursor's x-coordinate to snap back to if possible
+    int snapx;                // rendered x-coordinate to snap back to if possible
     int screenrows;           // number of visible rows in the screen
     int screencols;           // number of visible columns in the screen
     int rowoff;               // row offset (zero-indexed)
@@ -57,6 +57,6 @@ void init_editor(RopeNode *root);
 
 // Helper functions
 int cx_to_rx(int line, int cx);
-
+int rx_to_cx(int line, int rx);
 
 #endif
