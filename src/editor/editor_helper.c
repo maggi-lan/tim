@@ -22,8 +22,10 @@ int cx_to_rx(int line, int cx) {
     return rx;
 }
 
-
-// Convert rendered column coordinate (rx) at Nth line (zero-indexed) to it's cursor coordinate (cx)
+/*
+-> Convert rendered column coordinate (rx) at Nth line (zero-indexed) to it's cursor coordinate (cx)
+-> 'cx' clamps to the end of line if 'rx' is too high
+*/
 int rx_to_cx(int line, int rx) {
     // Fetch entire line
     int cur_rx = 0;
@@ -40,7 +42,7 @@ int rx_to_cx(int line, int rx) {
         else
             cur_rx++;
 
-        // Return required 'cx' when input 'rx' is reached
+        // Return required 'cx' when inputted 'rx' is reached
         if (cur_rx > rx) {
             free(buffer);
             return cx;
@@ -48,5 +50,7 @@ int rx_to_cx(int line, int rx) {
     }
 
     free(buffer);
+
+    // Clamp 'cx' to the end of the line
     return linelen;
 }

@@ -20,12 +20,16 @@ void move_cursor(int key) {
             }
             break;
         case ARROW_DOWN:
-            if (E.cy != E.numlines - 1)
+            if (E.cy != E.numlines - 1) {
                 E.cy++;
+                E.cx = rx_to_cx(E.cy, E.snapx);  // snaps cursor horizontally
+            }
             break;
         case ARROW_UP:
-            if (E.cy != 0)
+            if (E.cy != 0) {
                 E.cy--;
+                E.cx = rx_to_cx(E.cy, E.snapx);  // snaps cursor horizontally
+            }
             break;
         case ARROW_RIGHT:
             if (E.cx < rowsize) {
@@ -34,14 +38,6 @@ void move_cursor(int key) {
             }
             break;
     }
-
-    // Snaps cursor (this has effect only on vertical movement)
-    rowsize =  get_line_length(E.rope, E.cy);
-    int cx = rx_to_cx(E.cy, E.snapx);
-    if (cx > rowsize)
-        E.cx = rowsize;  // snap to end of line
-    else
-        E.cx = cx;  // snap back to original position
 }
 
 
