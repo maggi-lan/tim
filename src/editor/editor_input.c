@@ -67,15 +67,26 @@ int process_keypress(void) {
         // Move cursor to start/end of line
         case HOME_KEY:
             E.cx = 0;
+            E.snapx = 0;
             break;
         case END_KEY:
-            E.cx = E.screencols - 1;
+            E.cx =  get_line_length(E.rope, E.cy);
+            E.snapx = cx_to_rx(E.cy, E.cx);
             break;
 
         // Scroll up/down
         case PAGE_UP:
         case PAGE_DOWN:
             {
+                if (ch == PAGE_UP) {
+                    E.cy = E.rowoff;
+                }
+                else if (ch == PAGE_DOWN) {
+                    E.cy = E.rowoff + E.screenrows - 1;
+                    if (E.cy > E.numlines)
+                        E.cy = E.numlines;
+                }
+
                 for (int i = 0; i < E.screenrows; i++) {
                     if (ch == PAGE_UP)
                         move_cursor(ARROW_UP);
