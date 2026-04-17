@@ -117,7 +117,7 @@ int count_total_lines(RopeNode *root) {
 -> 'maxlen': maximum length of the segment
 -> Resultant string will exclude newlines
 */
-char *get_segment_from_rope(RopeNode *root, int line, int start, int maxlen) {
+char *get_line_segment_from_rope(RopeNode *root, int line, int start, int maxlen) {
     // Edge case
     if (root == NULL)
         return NULL;
@@ -134,12 +134,12 @@ char *get_segment_from_rope(RopeNode *root, int line, int start, int maxlen) {
     RopeNode *leaf = leaf_at(root, lstart, &offset);
     // Error handling
     if (!leaf && len != 0)
-        halt("get_segment_from_rope");
+        halt("get_line_segment_from_rope");
 
     char *result = calloc(len + 1, 1);
     // Error handling
     if (!result)
-        halt("get_segment_from_rope");
+        halt("get_line_segment_from_rope");
 
     // Walk through the leaves to fetch segment
     for (int idx = 0; idx < len; idx++) {
@@ -147,7 +147,7 @@ char *get_segment_from_rope(RopeNode *root, int line, int start, int maxlen) {
             leaf = next_leaf(leaf);
             // Error handling
             if (!leaf)
-                halt("get_segment_from_rope");
+                halt("get_line_segment_from_rope");
 
             offset = 0;
         }

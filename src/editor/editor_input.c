@@ -12,6 +12,7 @@ void move_cursor(int key) {
 
     switch (key) {
         // NOTE: cursor coordinates stored in 'E' use zero-indexed
+        // NOTE: E.rx isn't used for horizontal movement as cursor snaps between tabs
         case ARROW_LEFT:
             if (E.cx != 0) {
                 E.cx--;

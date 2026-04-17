@@ -21,11 +21,12 @@ void refresh_screen(void) {
     draw_rows(&ab);
 
     // Move cursor to its original position
-    // NOTE: cursor coordinates (E.cx, E.cy) are zero-indexed
+    // NOTE: render/cursor coordinates (E.rx, E.cy) are zero-indexed
+    // NOTE: use E.rx for horizontal cursor position
     // NOTE: cursor positions (used in escape sequences) are one-indexed
     // NOTE: "\x1b[X;YH" moves cursor to position (X, Y)
     char buffer[32];
-    snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, (E.cx - E.coloff) + 1);
+    snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, (E.rx - E.coloff) + 1);
     ab_append(&ab, buffer, strlen(buffer));
 
     ab_append(&ab, "\x1b[?25h", 6);  // this escape sequence shows cursor
@@ -51,11 +52,47 @@ void draw_rows(AppendBuffer *ab) {
 
         // Display content
         if (filerow < E.numlines) {
-            char *buffer = get_segment_from_rope(E.rope, filerow, E.coloff, E.screencols);
-            int bufflen = string_length(buffer);
+            // Fetch entire line
+            int rawlen = get_line_length(E.rope, filerow);
+            char *raw = get_line_segment_from_rope(E.rope, filerow, 0, rawlen);
 
-            ab_append(ab, &buffer[0], bufflen);
-            free(buffer);
+            // Render into expanded buffer (if tabs are present in the line)
+            if (raw) {
+                int maxlen = MIN((rawlen * TAB_WIDTH) + 1, E.screencols + 1);
+                char *render = calloc(1, maxlen);  // render will only hold characters that will be displayed in screen
+                // Error handling
+                if (!render)
+                    halt("draw_rows");
+
+                int renlen = 0;
+                int rx = 0;
+
+                // Walk through raw line and expand the tabs
+                for (int i = 0; i < rawlen && rx < E.coloff + E.screencols; i++) {
+                    if (raw[i] == '\n')
+                        break;
+
+                    if (raw[i] == '\t') {
+                        int spaces = TAB_WIDTH - (rx % TAB_WIDTH);  // spaces required to reach next tab stop
+                        while (spaces--) {
+                            // Add spaces to 'render' only if it is going to be displayed in the screen
+                            if (rx >= E.coloff && rx < E.coloff + E.screencols)
+                                render[renlen++] = ' ';
+                            rx++;
+                        }
+                    }
+                    else {
+                        // Add characters to 'render' only if it is going to be displayed in the screen
+                        if (rx >= E.coloff && rx < E.coloff + E.screencols)
+                            render[renlen++] = raw[i];
+                        rx++;
+                    }
+                }
+
+                ab_append(ab, render, renlen);
+                free(render);
+                free(raw);
+            }
         }
 
         else {
@@ -96,15 +133,16 @@ void draw_rows(AppendBuffer *ab) {
 
 // Update E.rowoff to scroll up/down
 void scroll(void) {
-    // Scroll up/down
+    // Scroll vertically
     if (E.cy < E.rowoff)
         E.rowoff = E.cy;
     else if (E.cy >= E.rowoff + E.screenrows)
         E.rowoff = E.cy - E.screenrows + 1;
 
-    // Scroll left/right
-    if (E.cx < E.coloff)
-        E.coloff = E.cx;
-    else if (E.cx >= E.coloff + E.screencols)
-        E.coloff = E.cx - E.screencols + 1;
+    // Scroll horizontally
+    E.rx = cx_to_rx(E.cy, E.cx);
+    if (E.rx < E.coloff)
+        E.coloff = E.rx;
+    else if (E.rx >= E.coloff + E.screencols)
+        E.coloff = E.rx - E.screencols + 1;
 }

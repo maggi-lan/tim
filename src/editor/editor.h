@@ -8,15 +8,16 @@
 #include "rope.h"
 
 # define ABUF_INIT {NULL, 0, 0}
-
 # define TIM_VERSION "0.0.1"
 # define CTRL_PLUS(ch) ((ch) & 0x1f)  // 'Ctrl+Ch'
+# define TAB_WIDTH 4
 
 
 // EditorState maintains the editor’s runtime data and configuration
 typedef struct EditorState {
     int cx, cy;               // cursor coordinate (zero-indexed) -> location of cursor in the file
-    int snapx;                // cursor 'x' coordinate to snap back to if possible
+    int rx;                   // rendered x-coordinate
+    int snapx;                // cursor's x-coordinate to snap back to if possible
     int screenrows;           // number of visible rows in the screen
     int screencols;           // number of visible columns in the screen
     int rowoff;               // row offset (zero-indexed)
@@ -53,6 +54,9 @@ void ab_free(AppendBuffer *ab);
 
 // Editor initialization
 void init_editor(RopeNode *root);
+
+// Helper functions
+int cx_to_rx(int line, int cx);
 
 
 #endif

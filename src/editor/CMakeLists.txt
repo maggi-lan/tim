@@ -6,6 +6,7 @@ target_sources(editor
         editor_output.c
         editor_buffer.c
         editor_init.c
+        editor_helper.c
 
     PUBLIC
         FILE_SET HEADERS
