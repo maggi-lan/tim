@@ -131,7 +131,7 @@ void draw_rows(AppendBuffer *ab) {
 }
 
 
-// Update E.rowoff to scroll up/down
+// Update E.rowoff/E.coloff to scroll vertically/horizontally
 void scroll(void) {
     // Scroll vertically
     if (E.cy < E.rowoff)
@@ -140,7 +140,6 @@ void scroll(void) {
         E.rowoff = E.cy - E.screenrows + 1;
 
     // Scroll horizontally
-    E.rx = cx_to_rx(E.cy, E.cx);
     if (E.rx < E.coloff)
         E.coloff = E.rx;
     else if (E.rx >= E.coloff + E.screencols)

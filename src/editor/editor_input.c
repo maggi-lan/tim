@@ -1,6 +1,7 @@
 #include "editor.h"
 
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "terminal.h"
 #include "rope.h"
@@ -12,29 +13,54 @@ void move_cursor(int key) {
 
     switch (key) {
         // NOTE: cursor coordinates stored in 'E' use zero-indexed
-        // NOTE: E.rx isn't used for horizontal movement as cursor snaps between tabs
         case ARROW_LEFT:
             if (E.cx != 0) {
-                E.cx--;
-                E.snapx = cx_to_rx(E.cy, E.cx);
+                // Check char being crossed (char before current cursor position) to adjust rx
+                char *seg = get_line_segment_from_rope(E.rope, E.cy, E.cx - 1, 1);
+                if (seg) {
+                    if (seg[0] == '\t')
+                        E.rx -= TAB_WIDTH - (E.rx % TAB_WIDTH);
+                    else
+                        E.rx--;
+
+                    E.cx--;
+                    E.snapx = E.rx;
+
+                    free(seg);
+                }
             }
             break;
         case ARROW_DOWN:
             if (E.cy != E.numlines - 1) {
                 E.cy++;
+
                 E.cx = rx_to_cx(E.cy, E.snapx);  // snaps cursor horizontally
+                E.rx = cx_to_rx(E.cy, E.cx);
             }
             break;
         case ARROW_UP:
             if (E.cy != 0) {
                 E.cy--;
+
                 E.cx = rx_to_cx(E.cy, E.snapx);  // snaps cursor horizontally
+                E.rx = cx_to_rx(E.cy, E.cx);
             }
             break;
         case ARROW_RIGHT:
             if (E.cx < rowsize) {
-                E.cx++;
-                E.snapx = cx_to_rx(E.cy, E.cx);
+                // Check char being crossed (char at current cursor position) to adjust rx
+                char *seg = get_line_segment_from_rope(E.rope, E.cy, E.cx, 1);
+                if (seg) {
+                    if (seg[0] == '\t')
+                        E.rx += TAB_WIDTH - (E.rx % TAB_WIDTH);
+                    else
+                        E.rx++;
+
+                    E.cx++;
+                    E.snapx = E.rx;
+
+                    free(seg);
+                }
             }
             break;
     }
@@ -67,11 +93,13 @@ int process_keypress(void) {
         // Move cursor to start/end of line
         case HOME_KEY:
             E.cx = 0;
-            E.snapx = 0;
+            E.rx = 0;
+            E.snapx = E.rx;
             break;
         case END_KEY:
             E.cx =  get_line_length(E.rope, E.cy);
-            E.snapx = cx_to_rx(E.cy, E.cx);
+            E.rx = cx_to_rx(E.cy, E.cx);
+            E.snapx = E.rx;
             break;
 
         // Scroll up/down
