@@ -21,7 +21,6 @@ cmake --build build
 
 ### TODO
 
-- [ ] text viewing
 - [ ] modal editing
 
 - May add these features in the future...
