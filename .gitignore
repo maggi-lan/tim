@@ -9,6 +9,9 @@ tim
 # Build directory
 build/
 
+# Sample text files (for testing)
+text/
+
 # Editor Junk
 *.swp
 *.~
