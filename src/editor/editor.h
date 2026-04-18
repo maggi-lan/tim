@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <termios.h>
+#include <time.h>
 
 #include "rope.h"
 
@@ -22,6 +23,10 @@ typedef struct EditorState {
     int screencols;           // number of visible columns in the screen
     int rowoff;               // row offset (zero-indexed)
     int coloff;               // column offset (zero-indexed)
+    char *filename;           // name of the open file
+
+    char statusmsg[80];       // status message to be displayed at the bottom of the screen
+    time_t statusmsg_time;    // timestamp of status message
 
     RopeNode *rope;           // data structure containing the text buffer
     int numlines;             // number of lines in rope
@@ -47,13 +52,16 @@ int process_keypress(void);
 void refresh_screen(void);
 void draw_rows(AppendBuffer *ab);
 void scroll(void);
+void draw_status_bar(AppendBuffer *ab);
+void set_status_message(const char *fmt, ...);
+void draw_message_bar(AppendBuffer *ab);
 
 // Append buffer operations
 void ab_append(AppendBuffer *ab, char *str, int len);
 void ab_free(AppendBuffer *ab);
 
 // Editor initialization
-void init_editor(RopeNode *root);
+void init_editor(RopeNode *root, char *filename);
 
 // Helper functions
 int cx_to_rx(int line, int cx);

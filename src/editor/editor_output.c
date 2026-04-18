@@ -1,6 +1,7 @@
 #include "editor.h"
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -19,6 +20,8 @@ void refresh_screen(void) {
     ab_append(&ab, "\x1b[H", 3);     // this escape sequence moves cursor to top left
 
     draw_rows(&ab);
+    draw_status_bar(&ab);
+    draw_message_bar(&ab);
 
     // Move cursor to its original position
     // NOTE: render/cursor coordinates (E.rx, E.cy) are zero-indexed
@@ -124,9 +127,8 @@ void draw_rows(AppendBuffer *ab) {
             }
         }
 
-        // Avoid adding newline in the last row
-        if (line < E.screenrows - 1)
-            ab_append(ab, "\r\n", 2);
+        // Add newline after every row
+        ab_append(ab, "\r\n", 2);
     }
 }
 
@@ -144,4 +146,76 @@ void scroll(void) {
         E.coloff = E.rx;
     else if (E.rx >= E.coloff + E.screencols)
         E.coloff = E.rx - E.screencols + 1;
+}
+
+
+/*
+-> Renders status bar at the bottom of the viewport
+-> It doesn't actually write to STDOUT
+-> It appends all content to the append buffer
+*/
+void draw_status_bar(AppendBuffer *ab) {
+    ab_append(ab, "\x1b[7m", 4);
+
+    char status[80];
+    int len = snprintf(status, sizeof(status), "%.20s - %d lines", E.filename, E.numlines);
+
+    // Clamp length of status bar
+    if (len > E.screencols)
+        len = E.screencols;
+
+    ab_append(ab, status, len);
+
+    char rstatus[80];
+    int rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d", E.cy + 1, E.numlines);
+
+    while (len < E.screencols) {
+        // Print right side of the status bar
+        if (E.screencols - len == rlen) {
+            ab_append(ab, rstatus, rlen);
+            break;
+        }
+
+        // Add whitespaces
+        else {
+            ab_append(ab, " ", 1);
+            len++;
+        }
+    }
+
+    ab_append(ab, "\x1b[m", 3);
+    ab_append(ab, "\r\n", 2);
+}
+
+
+/*
+-> Sets custom status message by updating the editor state
+-> Behaves like printf()
+-> Accepts variable number of arguements
+*/
+void set_status_message(const char *fmt, ...) {
+    // Create custom printf() like facility
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(E.statusmsg, sizeof(E.statusmsg), fmt, ap);
+    va_end(ap);
+    E.statusmsg_time = time(NULL);
+}
+
+/*
+-> Renders message bar at the bottom of the viewport
+-> It doesn't actually write to STDOUT
+-> It appends all content to the append buffer
+*/
+void draw_message_bar(AppendBuffer *ab) {
+    ab_append(ab, "\x1b[K", 3);  // this escape sequence clears current line
+
+    // Clamp the length of the message
+    int msglen = strlen(E.statusmsg);
+    if (msglen > E.screencols)
+        msglen = E.screencols;
+
+    // Display message only if it's less than 5 seconds old
+    if (msglen && time(NULL) - E.statusmsg_time < 5)
+        ab_append(ab, E.statusmsg, msglen);
 }

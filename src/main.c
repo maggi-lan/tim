@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 
 #include "rope.h"
@@ -15,10 +16,13 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	RopeNode *root = load_file(argv[1]);
+    char *filename = argv[1];
+	RopeNode *root = load_file(filename);
 
     enable_raw();
-    init_editor(root);
+    init_editor(root, filename);
+
+    set_status_message("HELP: Ctrl-Q = quit");
 
     while(true) {
         refresh_screen();
@@ -27,5 +31,6 @@ int main(int argc, char **argv) {
     }
 
 	free_rope(E.rope);
+    free(E.filename);
 	return 0;
 }
