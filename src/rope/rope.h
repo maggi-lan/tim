@@ -44,11 +44,11 @@ typedef struct RopeNode {
 
 
 // Rope functions
-RopeNode *create_leaf(char *text);
+RopeNode *create_leaf(const char *text);
 RopeNode *concat(RopeNode *left, RopeNode *right);
 void split(RopeNode *root, int idx, RopeNode **left, RopeNode **right);
-RopeNode *build_rope(char *text);
-RopeNode *insert_at(RopeNode *root, int idx, char *text);
+RopeNode *build_rope(const char *text);
+RopeNode *insert_at(RopeNode *root, int idx, const char *text);
 RopeNode *delete_at(RopeNode *root, int start, int len);
 void free_rope(RopeNode *root);
 
@@ -61,11 +61,11 @@ RopeNode *rebalance(RopeNode *node);
 // Helper functions
 bool is_leaf(RopeNode *node);
 int node_height(RopeNode *node);
-int string_length(char *str);
-int count_newlines(char *str);
+int string_length(const char *str);
+int count_newlines(const char *str);
 void update_metadata(RopeNode *node);
-char *string_copy(char *src);
-char *substr_copy(char *start, int n);
+char *string_copy(const char *src);
+char *substr_copy(const char *start, int n);
 
 // Utility functions
 int find_newline_pos(RopeNode *node, int newline_idx, int offset);

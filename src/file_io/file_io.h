@@ -8,9 +8,9 @@
 
 
 // File operations
-RopeNode *load_file(char *filename);
+RopeNode *load_file(const char *filename);
 void write_rope_to_file(RopeNode *node, FILE *fp);
-bool save_file(RopeNode *root, char *filename);
+bool save_file(RopeNode *root, const char *filename);
 
 
 #endif

@@ -6,7 +6,7 @@
 
 
 // Exits process with an error message
-void halt(char *str) {
+void halt(const char *str) {
     write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
     write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left
 

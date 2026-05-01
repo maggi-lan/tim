@@ -35,7 +35,7 @@ int node_height(RopeNode *node) {
 -> Returns the length of the string
 -> Returns zero if NULL string is passed
 */
-int string_length(char *str) {
+int string_length(const char *str) {
 	if (str != NULL)
 		return strlen(str);
 	else
@@ -47,7 +47,7 @@ int string_length(char *str) {
 -> Returns the number '\n's in the string
 -> Returns zero if NULL string is passed
 */
-int count_newlines(char *str) {
+int count_newlines(const char *str) {
 	if (str == NULL)
 		return 0;
 
@@ -99,7 +99,7 @@ void update_metadata(RopeNode *node) {
 
 
 // Allocates memory for a string, copies the input to it and returns the new string
-char *string_copy(char *src) {
+char *string_copy(const char *src) {
 	char *dst = malloc(string_length(src) + 1);  // plus one for null character
 	// If malloc fails
 	if (dst == NULL) {
@@ -113,7 +113,7 @@ char *string_copy(char *src) {
 
 
 // Allocates memory for a string, copies a substring (of length 'n') of the input and returns the new string
-char *substr_copy(char *start, int n) {
+char *substr_copy(const char *start, int n) {
 	// Edge case
 	if (start == NULL)
 		return NULL;

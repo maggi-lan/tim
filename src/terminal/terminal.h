@@ -33,7 +33,7 @@ int get_cursor_pos(int *row, int *col);
 int get_window_size(int *rows, int *cols);
 
 // Helper functions
-void halt(char *str);
+void halt(const char *str);
 int escape_parser(void);
 
 

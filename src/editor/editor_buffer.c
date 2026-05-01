@@ -9,7 +9,7 @@
 
 
 // Append a string 'str' (of length 'len' excluding '\0') to an AppendBuffer
-void ab_append(AppendBuffer *ab, char *str, int len) {
+void ab_append(AppendBuffer *ab, const char *str, int len) {
     // Edge case
     if (str == NULL || len <= 0)
         return;

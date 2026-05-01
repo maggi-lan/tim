@@ -11,7 +11,7 @@ EditorState E;
 
 
 // Initialize global editor state
-void init_editor(RopeNode *root, char *filename) {
+void init_editor(RopeNode *root, const char *filename) {
     // Set cursor position at top left
     E.cx = 0;
     E.cy = 0;

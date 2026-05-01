@@ -6,7 +6,7 @@
 
 
 // Allocates a new rope node, attaches text, sets metadata and returns it
-RopeNode *create_leaf(char *text) {
+RopeNode *create_leaf(const char *text) {
 	RopeNode *node = calloc(1, sizeof(RopeNode));	
 	// If calloc fails
 	if (node == NULL) {
@@ -168,7 +168,7 @@ void split(RopeNode *node, int idx, RopeNode **left, RopeNode **right) {
 
 
 // Builds a rope structure from the string of text and returns the root of the rope
-RopeNode *build_rope(char *text) {
+RopeNode *build_rope(const char *text) {
 	// Edge case
 	if (text == NULL)
 		return NULL;
@@ -193,7 +193,7 @@ RopeNode *build_rope(char *text) {
 -> Splits the rope into two at the given index and concatenates a new rope in between
 -> Returns the new root
 */
-RopeNode *insert_at(RopeNode *root, int idx, char *text) {
+RopeNode *insert_at(RopeNode *root, int idx, const char *text) {
 	// Edge case
 	if (root == NULL)
 		return build_rope(text);

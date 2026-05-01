@@ -13,7 +13,7 @@
 -> Returns the root of the rope
 -> Returns an empty rope if file doesn't exist
 */
-RopeNode *load_file(char *filename) {
+RopeNode *load_file(const char *filename) {
 	FILE *fp = fopen(filename, "rb");
 
     // Edge case
@@ -66,7 +66,7 @@ void write_rope_to_file(RopeNode *node, FILE *fp) {
 -> Saves the rope to a file
 -> Returns 'true' if successful, else 'false'
 */
-bool save_file(RopeNode *root, char *filename) {
+bool save_file(RopeNode *root, const char *filename) {
 	// Edge case
 	if (filename == NULL)
 		return false;

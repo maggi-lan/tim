@@ -57,11 +57,11 @@ void set_status_message(const char *fmt, ...);
 void draw_message_bar(AppendBuffer *ab);
 
 // Append buffer operations
-void ab_append(AppendBuffer *ab, char *str, int len);
+void ab_append(AppendBuffer *ab, const char *str, int len);
 void ab_free(AppendBuffer *ab);
 
 // Editor initialization
-void init_editor(RopeNode *root, char *filename);
+void init_editor(RopeNode *root, const char *filename);
 
 // Helper functions
 int cx_to_rx(int line, int cx);
