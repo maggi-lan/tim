@@ -5,7 +5,7 @@
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define CHUNK_SIZE 64
+#define CHUNK_SIZE 256
 
 
 /*
