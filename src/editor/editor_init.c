@@ -27,6 +27,8 @@ void init_editor(RopeNode *root, const char *filename) {
     E.statusmsg[0] = '\0';
     E.statusmsg_time = 0;
 
+    E.mode = MODE_NORMAL;
+
     E.rope = root;
     E.numlines = (root == NULL) ? 0 : root->newlines + 1;
 }

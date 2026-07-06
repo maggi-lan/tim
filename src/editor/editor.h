@@ -14,6 +14,13 @@
 # define TAB_WIDTH 4
 
 
+// Modes of the editor
+typedef enum EditorMode {
+    MODE_NORMAL,
+    MODE_INSERT,
+    MODE_COMMAND
+} EditorMode;
+
 // Maintains the editor’s runtime data and configuration
 typedef struct EditorState {
     int cx, cy;               // cursor coordinate (0-indexed) -> location of cursor in the file
@@ -27,6 +34,8 @@ typedef struct EditorState {
 
     char statusmsg[80];       // status message to be displayed at the bottom of the screen
     time_t statusmsg_time;    // timestamp of status message
+
+    EditorMode mode;           // current mode of the editor
 
     RopeNode *rope;           // data structure containing the text buffer
     int numlines;             // number of lines in the rope
