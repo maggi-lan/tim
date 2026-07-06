@@ -18,10 +18,7 @@ enum SpecialKeys {
 };
 
 
-/*
--> Global terminal state
--> It's the state before enabling raw mode
-*/
+// State of terminal before enabling raw mode
 extern struct termios old_term;
 
 

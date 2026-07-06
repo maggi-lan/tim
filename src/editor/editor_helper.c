@@ -3,11 +3,10 @@
 #include <stdlib.h>
 
 
-// Convert cursor coordinate (cx) at Nth line (zero-indexed) to it's rendered column coordinate (rx)
+// Converts a cursor column (cx) on the specified line (0-indexed) to its rendered column (rx)
 int cx_to_rx(int line, int cx) {
     int rx = 0;
     char *buffer = get_line_segment_from_rope(E.rope, line, 0, cx);
-    // Edge case
     if (!buffer)
         return 0;
 
@@ -23,26 +22,23 @@ int cx_to_rx(int line, int cx) {
 }
 
 /*
--> Convert rendered column coordinate (rx) at Nth line (zero-indexed) to it's cursor coordinate (cx)
--> 'cx' clamps to the end of line if 'rx' is too high
+-> Converts a rendered column (rx) on the specified line to its cursor column (cx)
+-> Returns the 'cx' of the end of the line if 'rx' exceeds the rendered width
 */
 int rx_to_cx(int line, int rx) {
-    // Fetch entire line
-    int cur_rx = 0;
+    // Fetch entire line because we need to expand tabs
     int linelen = get_line_length(E.rope, line);
     char *buffer = get_line_segment_from_rope(E.rope, line, 0, linelen);
-    // Edge case
     if (!buffer)
         return 0;
+    int cur_rx = 0;
 
-    // Walk through the line and compute rx
     for (int cx = 0; cx < linelen; cx++) {
         if (buffer[cx] == '\t')
             cur_rx += TAB_WIDTH - (cur_rx % TAB_WIDTH);
         else
             cur_rx++;
 
-        // Return required 'cx' when inputted 'rx' is reached
         if (cur_rx > rx) {
             free(buffer);
             return cx;
@@ -51,6 +47,5 @@ int rx_to_cx(int line, int rx) {
 
     free(buffer);
 
-    // Clamp 'cx' to the end of the line
-    return linelen;
+    return linelen;  // clamp to the end of the line
 }

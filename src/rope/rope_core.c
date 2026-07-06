@@ -5,14 +5,11 @@
 #include "terminal.h"
 
 
-// Allocates a new rope node, attaches text, sets metadata and returns it
+// Creates a leaf node from the given text chunk
 RopeNode *create_leaf(const char *text) {
 	RopeNode *node = calloc(1, sizeof(RopeNode));	
-	// If calloc fails
-	if (node == NULL) {
+	if (node == NULL)
 		halt("create_leaf");
-		exit(EXIT_FAILURE);
-	}
 
 	node->str = string_copy(text);
 	update_metadata(node);
@@ -77,34 +74,33 @@ RopeNode *concat(RopeNode *left_subtree, RopeNode *right_subtree) {
 
 
 /*
--> Splits a tree into two parts at a given index recursively and concatenates to rebuild the trees
--> 'left' and 'right' are the resulting subtrees
+-> Splits a rope into two subtrees at the given index
+-> Stores the resulting left and right subtrees in 'left' and 'right'
 */
 void split(RopeNode *node, int idx, RopeNode **left, RopeNode **right) {
-	// Edge case
 	if (node == NULL) {
 		*left = NULL;
 		*right = NULL;
 		return;
 	}
 
-	// BASE CASE: 'node' is a leaf node
+	// BASE CASE
 	if (is_leaf(node)) {
 		int len = string_length(node->str);
 
-		// SUB-CASE-A: everything goes to the right
+		// SUB-CASE-A: split before the leaf
 		if (idx <= 0) {
 			*left = NULL;
 			*right = node;
 		}
 
-		// SUB-CASE-B: everything goes to the left
+		// SUB-CASE-B: split after the leaf
 		else if (idx >= len) {
 			*left = node;
 			*right = NULL;
 		}
 
-		// SUB-CASE-C: split the leaf into two leaves
+		// SUB-CASE-C: split the leaf into two
 		else {
 			char *left_str = substr_copy(node->str, idx);
 			char *right_str = substr_copy(node->str + idx, len - idx);
@@ -121,51 +117,41 @@ void split(RopeNode *node, int idx, RopeNode **left, RopeNode **right) {
 		return;
 	}
 
-	// CASE-1: required index is in the left subtree
+	// CASE-1: required index is in the left subtree -> split the left subtree
 	if (idx < node->weight) {
-		RopeNode *L;  // left split of the left subtree
-		RopeNode *R;  // right split of the left subtree
+		RopeNode *left_split;   // of the left subtree
+		RopeNode *right_split;  // of the left subtree
 
-		// Split the left subtree
-		split(node->left, idx, &L, &R);
-
-		// Concatenate the right portion of the split of left subtree with right portion of current split
-		*right = concat(R, node->right);
-
-		// Update 'left' with the left portion of the split of left subtree
-		*left = L;
+		split(node->left, idx, &left_split, &right_split);
+		*right = concat(right_split, node->right);
+		*left = left_split;
 	}
 
-	// CASE-2: required index is in the right subtree
+	// CASE-2: required index is in the right subtree -> split the right subtree
 	else {
-		RopeNode *L;  // left split of the right subtree
-		RopeNode *R;  // right split of the right subtree
+		RopeNode *left_split;   // of the right subtree
+		RopeNode *right_split;  // of the right subtree
 
-		// Split the right subtree
-		split(node->right, idx - node->weight, &L, &R);  // NOTE: index changes when we recurse to right subtree
-
-		// Concatenate the left portion of the split of right subtree with left portion of current split
-		*left = concat(node->left, L);
-
-		// Update 'right' with the right portion of the split of right subtree
-		*right = R;
+		split(node->right, idx - node->weight, &left_split, &right_split);  // adjust idx relative to the right subtree
+		*left = concat(node->left, left_split);
+		*right = right_split;
 	}
 
-	// Free the old internal node
 	free(node);
 }
 
 
-// Builds a rope structure from the string of text and returns the root of the rope
+/*
+-> Builds a rope from the given string of text
+-> Returns the root of the rope
+*/
 RopeNode *build_rope(const char *text) {
-	// Edge case
 	if (text == NULL)
 		return NULL;
 
 	int len = string_length(text);
 	RopeNode *root = NULL;
 
-	// Iteratively create leaves and concatenate to the root
 	for (int i = 0; i < len; i += CHUNK_SIZE) {
 		char *buffer = substr_copy(text + i, CHUNK_SIZE);
 		RopeNode *leaf = create_leaf(buffer);
@@ -178,18 +164,15 @@ RopeNode *build_rope(const char *text) {
 
 
 /*
--> Inserts a string at a given index
--> Splits the rope into two at the given index and concatenates a new rope in between
--> Returns the new root
+-> Inserts a string of text to a rope at a given index
+-> Returns the new root of the rope after insertion
 */
 RopeNode *insert_at(RopeNode *root, int idx, const char *text) {
-	// Edge case
 	if (root == NULL)
 		return build_rope(text);
 	if (text == NULL)
 		return root;
 
-	// Out of bounds handling
 	if (idx < 0)
 		idx = 0;
 	else if (idx > root->total_len)
@@ -209,19 +192,13 @@ RopeNode *insert_at(RopeNode *root, int idx, const char *text) {
 
 
 /*
--> Deletes a string of certain length at a given index
--> Splits the rope at two points, concatenates the left most & right most ropes and deletes the middle rope
--> root = root node of the rope
--> start = starts deleting from this index
--> len = length of text to be deleted
--> Returns the new root
+-> Deletes 'len' characters from the rope starting at index 'start'
+-> Returns the new root of the rope after deletion
 */
 RopeNode *delete_at(RopeNode *root, int start, int len) {
-	// Edge case
 	if (root == NULL || len <= 0)
 		return root;
 
-	// Out of bounds handling
 	if (start < 0)
 		start = 0;
 	if (start >= root->total_len)
@@ -229,12 +206,12 @@ RopeNode *delete_at(RopeNode *root, int start, int len) {
 	if (start + len > root->total_len)
 		len = root->total_len - start;
 
-	// Split at 'start' -> left + mid
+	// root -> left + mid
 	RopeNode *left = NULL;
 	RopeNode *mid = NULL;
 	split(root, start, &left, &mid);
 
-	// Split at 'mid' at 'len' -> mid + right
+	// mid -> mid + right
 	RopeNode *right = NULL;
 	split(mid, len, &mid, &right);
 
@@ -249,7 +226,6 @@ RopeNode *delete_at(RopeNode *root, int start, int len) {
 
 // Recursively frees all nodes and their text chunks in a rope
 void free_rope(RopeNode *node) {
-	// BASE-CASE
 	if (node == NULL)
 		return;
 

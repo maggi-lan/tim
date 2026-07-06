@@ -16,25 +16,22 @@ void halt(const char *str) {
 
 
 /*
--> Parse through escape sequences and return the key code
+-> Reads + parses escape sequences and returns the key code
 -> Assumes that the first character is already read from STDIN
--> Returns an escape character in case error
+-> Returns an escape character in case of failure
 */
 int escape_parser(void) {
     char seq[3];
 
-    // Read second and third characters in the escape sequence
-    if (read(STDIN_FILENO, &seq[0], 1) != 1)
+    if (read(STDIN_FILENO, &seq[0], 1) != 1)  // 2nd character
         return '\x1b';
-    if (read(STDIN_FILENO, &seq[1], 1) != 1)
+    if (read(STDIN_FILENO, &seq[1], 1) != 1)  // 3rd character
         return '\x1b';
 
-    // CASE-1: second character is '['
     if (seq[0] == '[') {
-        // SUB-CASE-A: escape sequence is 4 characters long
+        // Escape sequence is 4 characters long
         if (seq[1] >= '0' && seq[1] <= '9') {
-            // Read fourth character in the escape sequence
-            if (read(STDIN_FILENO, &seq[2], 1) != 1)
+            if (read(STDIN_FILENO, &seq[2], 1) != 1)  // 4th character
                 return '\x1b';
 
             if (seq[2] == '~') {
@@ -57,7 +54,7 @@ int escape_parser(void) {
             }
         }
 
-        // SUB-CASE-B: escape sequence is 3 characters long
+        // Escape sequence is 3 characters long
         else {
             switch (seq[1]) {
                 case 'A':
@@ -76,7 +73,6 @@ int escape_parser(void) {
         }
     }
 
-    // CASE-2: second character is 'O'
     else if (seq[0] == 'O') {
         switch (seq[1]) {
             case 'H':
@@ -86,6 +82,5 @@ int escape_parser(void) {
         }
     }
 
-    // Program reaches here if escape sequence is invalid
-    return '\x1b';
+    return '\x1b';  // invalid escape sequence
 }

@@ -6,15 +6,14 @@
 
 
 /*
--> Returns the text index (zero-based) of the Nth newline character (zero-based) recursively
--> Returns -1 if newline_idx is invalid
+-> Returns the index (0-based) of a given newline (identified by 0-based newline_idx) from a rope
+-> Returns -1 if newline_idx is out of range
 */
 int find_newline_pos(RopeNode *node, int newline_idx, int offset) {
-    // Edge case
     if (node == NULL)
         return -1;
 
-    // BASE CASE: leaf nodes -> iteratively check for the newline in the text chunk
+    // BASE CASE
     if (is_leaf(node)) {
         int newline_count = 0;
         for (int i = 0; node->str[i] != '\0'; i++) {
@@ -25,29 +24,27 @@ int find_newline_pos(RopeNode *node, int newline_idx, int offset) {
             }
         }
 
-        return -1;  // execution reaches here if there is no newline in the text chunk
+        return -1;
     }
 
     int left_newlines = node->left ? node->left->newlines : 0;
 
-    // CASE-1: target newline is in left subtree -> recurse to the left subtree
+    // CASE-1: target newline is in the left subtree
     if (newline_idx < left_newlines)
         return find_newline_pos(node->left, newline_idx, offset);
 
-    // CASE-2: target newline is in right subtree -> recurse to the right subtree
+    // CASE-2: target newline is in the right subtree
     else
-        // Adjust newline_idx and offset
-        return find_newline_pos(node->right, newline_idx - left_newlines, offset + node->weight);
+        return find_newline_pos(node->right, newline_idx - left_newlines, offset + node->weight);  // adjust newline_idx and offset
 }
 
 
 /*
--> Returns the starting position (zero-based character index) of Nth line (zero-based)
--> Returns 0 in case of error or negative line
--> Returns the index after the last character in the text if 'line' exceeds the number of available lines
+-> Returns the starting index (0-based) of a given line (0-based) from a rope
+-> Returns 0 if the rope is empty or the line number is negative
+-> Returns the index after the last character if the line does not exist
 */
 int get_line_start(RopeNode *root, int line) {
-    // Edge case
     if (root == NULL || line < 0)
         return 0;
 
@@ -58,42 +55,34 @@ int get_line_start(RopeNode *root, int line) {
     if (line == 0)
         return 0;
 
-    // Line N starts at position after (N-1)th newline
+    // Line N starts at the position after (N-1)th newline
     int newline_pos = find_newline_pos(root, line - 1, 0);
 
     if (newline_pos == -1)
-        return root->total_len;  // Line doesn't exist, return (last_index + 1)
+        return root->total_len;  // index after the last character
 
-    return newline_pos + 1;  // Position after the newline
+    return newline_pos + 1;
 }
 
 
 /*
--> Returns the length of a specific line (excluding newline)
--> Pass in root and line index (zero-based)
+-> Returns the length of a specific line (excluding newline) from a rope
+-> Pass in root and line index (0-based)
 -> Returns zero in case of error
 */
 int get_line_length(RopeNode *root, int line) {
-    // Edge case
     if (root == NULL)
         return 0;
 
-    int start = get_line_start(root, line);  // starting position of the line
-
-    // If 'line' exceeds the total number of available lines
+    int start = get_line_start(root, line);
     if (start >= root->total_len)
         return 0;
 
-    int end;  // position after the last character of the line
-
-    // If the 'line' is the last line and it doesn't have a newline character at the end
-    if (line >= root->newlines) {
+    int end;
+    if (line >= root->newlines)  // last line
         end = root->total_len;
-    }
-    else {
-        int newline_pos = find_newline_pos(root, line, 0);
-        end = newline_pos;
-    }
+    else
+        end = find_newline_pos(root, line, 0);
 
     return end - start;
 }
@@ -112,18 +101,16 @@ int count_total_lines(RopeNode *root) {
 
 
 /*
--> Returns a segment of text at Nth line (zero-indexed)
--> 'start': starting index (zero-indexed) of the segment in the line
+-> Returns a segment of text at the Nth line (0-indexed) from a rope
+-> 'start': starting index (0-indexed) of the segment in the line
 -> 'maxlen': maximum length of the segment
 -> Resultant string will exclude newlines
 */
 char *get_line_segment_from_rope(RopeNode *root, int line, int start, int maxlen) {
-    // Edge case
     if (root == NULL)
         return NULL;
 
     int line_len = get_line_length(root, line);
-    // Edge case
     if (start >= line_len || maxlen == 0)
         return NULL;
 
@@ -132,12 +119,10 @@ char *get_line_segment_from_rope(RopeNode *root, int line, int start, int maxlen
     int offset;
 
     RopeNode *leaf = leaf_at(root, lstart, &offset);
-    // Error handling
     if (!leaf && len != 0)
         halt("get_line_segment_from_rope");
 
     char *result = calloc(len + 1, 1);
-    // Error handling
     if (!result)
         halt("get_line_segment_from_rope");
 
@@ -145,7 +130,6 @@ char *get_line_segment_from_rope(RopeNode *root, int line, int start, int maxlen
     for (int idx = 0; idx < len; idx++) {
         if (offset >= leaf->weight) {
             leaf = next_leaf(leaf);
-            // Error handling
             if (!leaf)
                 halt("get_line_segment_from_rope");
 
@@ -161,48 +145,42 @@ char *get_line_segment_from_rope(RopeNode *root, int line, int start, int maxlen
 
 
 /*
--> Returns the leaf node containing the character at a given index using recursion
--> Also updates 'offset' with the local offset of the character within the node
--> Usage: pass in the root node, zero-based index and a pointer to the variable storing the offset
--> Returns NULL in case of error
+-> Returns the leaf containing a character at a given index
+-> Stores the character's offset within the leaf in 'offset'
+-> Returns NULL if the index is out of range
 */
 RopeNode *leaf_at(RopeNode *node, int idx, int *offset) {
-    // Edge case
     if (node == NULL)
         return NULL;
 
-    // BASE CASE: leaf nodes -> return the character at 'idx'
+    // BASE CASE
     if (is_leaf(node)) {
-        // Out of bounds handling
         if (idx < 0 || idx >= node->weight)
             return NULL;
 
         *offset = idx;
-
         return node;
     }
 
-    // CASE-1: 'idx' lies in the left subtree -> recurse to the left subtree
+    // CASE-1: character lies in the left subtree
     if (idx < node->weight)
         return leaf_at(node->left, idx, offset);
 
-    // CASE-2: 'idx' lies in the right subtree -> recurse to the right subtree
+    // CASE-2: character lies in the right subtree
     else
         return leaf_at(node->right, idx - node->weight, offset);  // adjust index
 }
 
 
 /*
--> Returns the next leaf in a tree
--> Returns NULL in case of error
+-> Returns the next leaf in inorder traversal given a leaf node in a rope
+-> Returns NULL if no next leaf exists
 */
 RopeNode *next_leaf(RopeNode *leaf) {
-    // Edge case
     if (!leaf || !is_leaf(leaf))
         return NULL;
 
     RopeNode *next = successor_node(leaf);
-
     while (next != NULL && !is_leaf(next))
         next = successor_node(next);
 
@@ -215,13 +193,11 @@ RopeNode *next_leaf(RopeNode *leaf) {
 -> Returns NULL if successor doesn't exist
 */
 RopeNode *successor_node(RopeNode *node) {
-    // Edge case
     if (!node)
         return NULL;
 
-    // CASE-A: 'node' has a right child
+    // CASE-A: 'node' has a right child -> successor is the leftmost node in the right subtree
     if (node->right) {
-        // Go to the right child and go left as much as possible
         node = node->right;
         while (node->left != NULL)
             node = node->left;
@@ -229,9 +205,8 @@ RopeNode *successor_node(RopeNode *node) {
         return node;
     }
 
-    // CASE-B: 'node' has no right child
+    // CASE-B: 'node' has no right child -> walk up the rope until you came from a left child
     else {
-        // Walk up the rope until you came from a left child
         RopeNode *parent = node->parent;
         while (parent != NULL && parent->left != node) {
             node = parent;

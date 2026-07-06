@@ -9,16 +9,15 @@
 
 
 /*
--> Loads the file into a rope
+-> Loads a file into a rope
 -> Returns the root of the rope
 -> Returns an empty rope if file doesn't exist
 */
 RopeNode *load_file(const char *filename) {
 	FILE *fp = fopen(filename, "rb");
 
-    // Edge case
 	if (!fp) {
-        // CASE-A: file doesn't exist -> return empty rope (NULL)
+        // CASE-A: file doesn't exist -> return empty rope
         if (errno == ENOENT)
             return NULL;
         // CASE-B: can't load existing file -> exit program
@@ -27,14 +26,12 @@ RopeNode *load_file(const char *filename) {
     }
 
     RopeNode *root = NULL;
-    char buffer[CHUNK_SIZE + 1] = {0};
+    char buffer[CHUNK_SIZE + 1] = {0};  // +1 for null terminator
 
 	// Read the file in chunks
 	int n;
 	while ((n = fread(buffer, 1, CHUNK_SIZE, fp)) > 0) {
-        // NOTE: fread() loads the chunk of text into buffer
-        // NOTE: fread() returns the number of characters that were read
-		buffer[n] = '\0';                      // terminate buffer with null character
+		buffer[n] = '\0';                      // terminate buffer
 		RopeNode *leaf = create_leaf(buffer);
 		root = concat(root, leaf);
     }
@@ -44,38 +41,34 @@ RopeNode *load_file(const char *filename) {
 }
 
 
-// Writes the rope content to a file recursively
+// Writes the rope contents to a file recursively
 void write_rope_to_file(RopeNode *node, FILE *fp) {
-	// Base condition-1: NULL is reached
 	if (node == NULL)
 		return;
 
-	// Base condition-2: leaf is reached
 	if (is_leaf(node)) {
 		if (node->str != NULL)
-			fprintf(fp, "%s", node->str);  // append the string to the file
+			fprintf(fp, "%s", node->str);
 		return;
 	}
 
+    // Inorder traversal to preserve the original text order
 	write_rope_to_file(node->left, fp);
 	write_rope_to_file(node->right, fp);
 }
 
 
 /*
--> Saves the rope to a file
--> Returns 'true' if successful, else 'false'
+-> Saves the text in a rope to a file
+-> Returns 'true' on success, 'false' on failure
 */
 bool save_file(RopeNode *root, const char *filename) {
-	// Edge case
 	if (filename == NULL)
 		return false;
 
 	FILE *fp = fopen(filename, "w");
-    // Error handling
 	if (!fp) {
 		halt("save_file");
-		return false;
 	}
 
 	write_rope_to_file(root, fp);

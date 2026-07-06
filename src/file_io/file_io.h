@@ -1,10 +1,10 @@
 #ifndef FILE_IO_H
 #define FILE_IO_H
 
-#include "rope.h"
-
 #include <stdbool.h>
 #include <stdio.h>
+
+#include "rope.h"
 
 
 // File operations

@@ -12,15 +12,11 @@
 struct termios old_term;
 
 
-/*
--> Switches terminal from canonical mode to raw mode
--> Does it by altering a couple of terminal attributes
-*/
+// Switches terminal from canonical mode to raw mode by altering a couple of terminal attributes
 void enable_raw(void) {
     // Save initial terminal state and load it after program execution ends
-    if (tcgetattr(STDIN_FILENO, &old_term) == -1) {
+    if (tcgetattr(STDIN_FILENO, &old_term) == -1)
         halt("tcgetattr");
-    }
     atexit(disable_raw);
 
     struct termios raw_term = old_term;
@@ -56,10 +52,7 @@ void enable_raw(void) {
 }
 
 
-/*
--> Switches terminal from raw mode to canonical mode
--> Does it by restoring the initial terminal state (which was in canonical mode)
-*/
+// Switches terminal from raw mode to canonical mode by restoring the initial terminal state (which was in canonical mode)
 void disable_raw(void) {
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_term) == -1) {
         halt("tcsetattr");
@@ -75,13 +68,11 @@ int read_key(void) {
     // NOTE: read() has a timeout of 10 ms in raw mode
     // Loop ends when exactly one character is read from STDIN
     while ((nread = read(STDIN_FILENO, &ch, 1)) != 1) {
-        // If read fails
         if (nread == -1 && errno != EAGAIN)
             halt("read");
     }
 
-    // Parse escape sequences and return the sequence code
-    if (ch == '\x1b')
+    if (ch == '\x1b')  // NOTE: escape sequence start with '\x1b' (ESC)
         return escape_parser();
 
     return ch;
@@ -89,23 +80,21 @@ int read_key(void) {
 
 
 /*
--> Fetches the current position (row, col) of the cursor
--> Updates the values pointed by 'row' and 'col'
--> Returns 0 in case of success and -1 in case of error
--> Cursor positions start from 1 (not 0)
+-> Retrieves the current cursor position
+-> Stores the row and column in 'row' and 'col'
+-> Returns 0 on success and -1 on error
+-> Cursor positions are 1-based
 */
 int get_cursor_pos(int *row, int *col) {
     char buffer[32];
     unsigned int i = 0;
 
     // Query for current cursor position
-    // NOTE: we can retrieve this result from STDIN
-    // NOTE: the result is an escape sequence that terminates with 'R'
-    // NOTE: example -> "\x1b[30;40R" -> row = 30, col = 40
+    // The terminal replies on STDIN with an escape sequence of the form: "\x1b[row;colR" (e.g. "\x1b[30;40R" -> row = 30, col = 40)
     if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
         return -1;
 
-    // Parse through the result produced in STDIN and put it in 'buffer'
+    // Read the terminal's response into 'buffer'
     while (i < sizeof(buffer) - 1) {
         if (read(STDIN_FILENO, &buffer[i], 1) != 1)
             return -1;
@@ -117,7 +106,7 @@ int get_cursor_pos(int *row, int *col) {
     if (buffer[0] != '\x1b' || buffer[1] != '[')
         return -1;
 
-    // Extract the values from the buffer
+    // Read the terminal's response into 'buffer'
     if (sscanf(&buffer[2], "%d;%d", row, col) != 2)
         return -1;
 
@@ -126,14 +115,14 @@ int get_cursor_pos(int *row, int *col) {
 
 
 /*
--> Fetches the dimensions of the terminal screen
--> Updates the values pointed to by 'rows' and 'cols'
--> Returns 0 in case of success and -1 in case of error
+-> Retrieves the terminal dimensions
+-> Stores the number of rows and columns in 'rows' and 'cols'
+-> Returns 0 on success and -1 on error
 */
 int get_window_size(int *rows, int *cols) {
     struct winsize ws;
 
-    // NOTE: ioctl() will fetch the terminal dimensions and update 'ws'
+    // NOTE: ioctl() is a system call that retrieves the terminal dimensions
 
     // CASE-1: ioctl() fails -> use fallback mechanism
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {

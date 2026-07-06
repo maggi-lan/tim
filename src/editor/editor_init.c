@@ -18,9 +18,8 @@ void init_editor(RopeNode *root, const char *filename) {
     E.snapx = 0;
     E.rowoff = 0;
     E.coloff = 0;
-    E.filename = strdup(filename);  // don't forget to free this memory later
+    E.filename = strdup(filename);
 
-    // Fetch terminal screen dimensions and handle errors
     if (get_window_size(&E.screenrows, &E.screencols) == -1)
         halt("get_window_size");
     E.screenrows -= 2;  // leave space at the bottom for status/message bar

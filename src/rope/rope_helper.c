@@ -8,7 +8,6 @@
 
 // Returns true if the node has no children
 bool is_leaf(RopeNode *node) {
-	// Edge case
 	if (node == NULL)
 		return false;
 
@@ -20,8 +19,8 @@ bool is_leaf(RopeNode *node) {
 
 
 /*
--> Returns the height of the subtree rooted at the node
--> Returns zero if NULL pointer is passed
+-> Returns the height of the subtree rooted at 'node'
+-> Returns zero if subtree doesn't exist
 */
 int node_height(RopeNode *node) {
 	if (node != NULL)
@@ -32,7 +31,7 @@ int node_height(RopeNode *node) {
 
 
 /*
--> Returns the length of the string
+-> Returns the length of a string
 -> Returns zero if NULL string is passed
 */
 int string_length(const char *str) {
@@ -44,14 +43,13 @@ int string_length(const char *str) {
 
 
 /*
--> Returns the number '\n's in the string
+-> Returns the number '\n's in a string
 -> Returns zero if NULL string is passed
 */
 int count_newlines(const char *str) {
 	if (str == NULL)
 		return 0;
 
-	// Iteratively count the '\n's
 	int count = 0;
 	for (int i = 0; str[i] != '\0'; i++)
 		if (str[i] == '\n')
@@ -63,7 +61,6 @@ int count_newlines(const char *str) {
 
 // Recomputes total_len, weight, height and newlines of a node
 void update_metadata(RopeNode *node) {
-	// Edge case
 	if (node == NULL)
 		return;
 
@@ -77,18 +74,14 @@ void update_metadata(RopeNode *node) {
 
 	// CASE 2: node = internal node
 	else {
-		// total_len of internal node = sum of total_len of the left child and the right child
 		int left_len = node->left ? node->left->total_len : 0;
 		int right_len = node->right ? node->right->total_len : 0;
 		node->total_len = left_len + right_len;
 
-		// Weight of internal node = total length of characters in the left subtree
-		node->weight = left_len;
+		node->weight = left_len; // weight of internal node = total length of characters in the left subtree
 
-		// Calculate the height based on the heights of the node's children
 		node->height = 1 + MAX(node_height(node->left), node_height(node->right));
 
-		// newline = sum of number of newlines in the left child and the right child
 		node->newlines = 0;
 		if (node->left)
 			node->newlines += node->left->newlines;
@@ -98,31 +91,26 @@ void update_metadata(RopeNode *node) {
 }
 
 
-// Allocates memory for a string, copies the input to it and returns the new string
+// Returns a newly allocated copy of a given string
 char *string_copy(const char *src) {
-	char *dst = malloc(string_length(src) + 1);  // plus one for null character
-	// If malloc fails
-	if (dst == NULL) {
+	char *dst = malloc(string_length(src) + 1);  // +1 for null character
+	if (dst == NULL)
 		halt("string_copy");
-		exit(EXIT_FAILURE);
-	}
 
 	strcpy(dst, src);
 	return dst;
 }
 
 
-// Allocates memory for a string, copies a substring (of length 'n') of the input and returns the new string
+// Returns a newly allocated copy of the first 'n' characters of a given string
 char *substr_copy(const char *start, int n) {
-	// Edge case
 	if (start == NULL)
 		return NULL;
 	if (n > string_length(start)) {
 		n = string_length(start);
 	}
 
-    char *dst = malloc(n + 1);  // plus one for null character
-	// If malloc fails
+    char *dst = malloc(n + 1);  // +1 for null character
     if (dst == NULL) {
 		halt("substr_cpy");
 		exit(EXIT_FAILURE);

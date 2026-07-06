@@ -11,6 +11,7 @@
 
 
 int main(int argc, char **argv) {
+    // Mandatory to input file name as a command line argument
 	if (argc != 2) {
 		printf("Incorrect usage\nTry: ./tim <file>\n");
 		return 1;

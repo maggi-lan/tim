@@ -12,10 +12,10 @@ void move_cursor(int key) {
     int rowsize =  get_line_length(E.rope, E.cy);
 
     switch (key) {
-        // NOTE: cursor coordinates stored in 'E' use zero-indexed
+        // NOTE: cursor coordinates stored in 'E' are 0-indexed
         case ARROW_LEFT:
             if (E.cx != 0) {
-                // Check char being crossed (char before current cursor position) to adjust rx
+                // Check the character being crossed (character before the current cursor position) to adjust rx
                 char *seg = get_line_segment_from_rope(E.rope, E.cy, E.cx - 1, 1);
                 if (seg) {
                     if (seg[0] == '\t')
@@ -48,7 +48,7 @@ void move_cursor(int key) {
             break;
         case ARROW_RIGHT:
             if (E.cx < rowsize) {
-                // Check char being crossed (char at current cursor position) to adjust rx
+                // Check the character being crossed (character at the current cursor position) to adjust rx
                 char *seg = get_line_segment_from_rope(E.rope, E.cy, E.cx, 1);
                 if (seg) {
                     if (seg[0] == '\t')

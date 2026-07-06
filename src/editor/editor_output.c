@@ -10,38 +10,40 @@
 #include "rope.h"
 
 
-// Re-draws entire editor screen
+// Rebuilds and redraws the entire editor screen in a single buffered write.
 void refresh_screen(void) {
     scroll();
 
+    // Accumulate all screen output to 'ab' before writing it to STDOUT in one go
     AppendBuffer ab = ABUF_INIT;
 
-    ab_append(&ab, "\x1b[?25l", 6);  // this escape sequence hides cursor
-    ab_append(&ab, "\x1b[H", 3);     // this escape sequence moves cursor to top left
+    ab_append(&ab, "\x1b[?25l", 6);  // hides cursor to prevent flickering while redrawing the screen
+    ab_append(&ab, "\x1b[H", 3);     // moves cursor to the top left of the screen before redrawing the screen
 
     draw_rows(&ab);
     draw_status_bar(&ab);
     draw_message_bar(&ab);
 
-    // Move cursor to its original position
-    // NOTE: render/cursor coordinates (E.rx, E.cy) are zero-indexed
+    // NOTE: render/cursor coordinates (E.rx, E.cy) are 0-indexed
     // NOTE: use E.rx for horizontal cursor position
-    // NOTE: cursor positions (used in escape sequences) are one-indexed
+    // NOTE: cursor positions (used in escape sequences) are 1-indexed
     // NOTE: "\x1b[X;YH" moves cursor to position (X, Y)
+
+    // Restore cursor to the editor's logical position
     char buffer[32];
     snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", (E.cy - E.rowoff) + 1, (E.rx - E.coloff) + 1);
     ab_append(&ab, buffer, strlen(buffer));
 
-    ab_append(&ab, "\x1b[?25h", 6);  // this escape sequence shows cursor
+    ab_append(&ab, "\x1b[?25h", 6);  // displays the cursor after redrawing the screen
 
-    // NOTE: buffer has a null terminator in it and don't write it
+    // Flush the append buffer to STDOUT in one go
     write(STDOUT_FILENO, ab.buffer, ab.bufflen);
     ab_free(&ab);
 }
 
 
 /*
--> Renders all visible rows in the editor viewport
+-> Renders all visible rows in the editor's viewport
 -> It doesn't actually write to STDOUT
 -> It appends all content to the append buffer
 */
@@ -59,11 +61,9 @@ void draw_rows(AppendBuffer *ab) {
                 int welcomelen = snprintf(welcome, sizeof(welcome),
                     "TIM (Text vIM) -- version %s", TIM_VERSION);
 
-                // Truncate message if needed
                 if (welcomelen > E.screencols)
                     welcomelen = E.screencols;
 
-                // Add padding
                 int padding = (E.screencols - welcomelen) / 2;
                 if (padding) {
                     ab_append(ab, "~", 1);
@@ -76,9 +76,8 @@ void draw_rows(AppendBuffer *ab) {
             }
 
             // Display empty lines
-            else {
+            else
                 ab_append(ab, "~", 1);
-            }
         }
 
         // Add newline after every row
@@ -134,13 +133,13 @@ void draw_row(AppendBuffer *ab, int filerow) {
 
 // Update E.rowoff/E.coloff to scroll vertically/horizontally
 void scroll(void) {
-    // Scroll vertically
+    // Scroll vertically up/down
     if (E.cy < E.rowoff)
         E.rowoff = E.cy;
     else if (E.cy >= E.rowoff + E.screenrows)
         E.rowoff = E.cy - E.screenrows + 1;
 
-    // Scroll horizontally
+    // Scroll horizontally left/right
     if (E.rx < E.coloff)
         E.coloff = E.rx;
     else if (E.rx >= E.coloff + E.screencols)
@@ -154,12 +153,11 @@ void scroll(void) {
 -> It appends all content to the append buffer
 */
 void draw_status_bar(AppendBuffer *ab) {
-    ab_append(ab, "\x1b[7m", 4);
+    ab_append(ab, "\x1b[7m", 4);  // white background, black foreground
 
     char status[80];
     int len = snprintf(status, sizeof(status), "%.20s - %d lines", E.filename, E.numlines);
 
-    // Clamp length of status bar
     if (len > E.screencols)
         len = E.screencols;
 
@@ -169,20 +167,20 @@ void draw_status_bar(AppendBuffer *ab) {
     int rlen = snprintf(rstatus, sizeof(rstatus), "%d/%d", E.cy + 1, E.numlines);
 
     while (len < E.screencols) {
-        // Print right side of the status bar
+        // Right side of the status bar
         if (E.screencols - len == rlen) {
             ab_append(ab, rstatus, rlen);
             break;
         }
 
-        // Add whitespaces
+        // Whitespaces
         else {
             ab_append(ab, " ", 1);
             len++;
         }
     }
 
-    ab_append(ab, "\x1b[m", 3);
+    ab_append(ab, "\x1b[m", 3);  // reset colors to default
     ab_append(ab, "\r\n", 2);
 }
 
@@ -207,9 +205,8 @@ void set_status_message(const char *fmt, ...) {
 -> It appends all content to the append buffer
 */
 void draw_message_bar(AppendBuffer *ab) {
-    ab_append(ab, "\x1b[K", 3);  // this escape sequence clears current line
+    ab_append(ab, "\x1b[K", 3);  // clears current line to prevent artifacts from previous content
 
-    // Clamp the length of the message
     int msglen = strlen(E.statusmsg);
     if (msglen > E.screencols)
         msglen = E.screencols;

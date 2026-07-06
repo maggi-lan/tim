@@ -10,31 +10,26 @@
 
 // Append a string 'str' (of length 'len' excluding '\0') to an AppendBuffer
 void ab_append(AppendBuffer *ab, const char *str, int len) {
-    // Edge case
     if (str == NULL || len <= 0)
         return;
 
-    // 'ab' has an empty buffer -> initialize buffer
     if (ab->buffer == NULL) {
         ab->buffer = calloc(len, 1);
-        // Error handling
         if (ab->buffer == NULL)
             halt("ab_append");
 
-        memcpy(ab->buffer, str, len);  // copy 'str' to buffer
+        memcpy(ab->buffer, str, len);
 
         ab->capacity = len;
         ab->bufflen = ab->capacity;
     }
 
     else {
-        // Expand buffer if needed
         int cap = ab->capacity;
         while (cap < (ab->bufflen + len))
             cap *= 2;
         if (cap != ab->capacity) {
             char *new = realloc(ab->buffer, cap);
-            // If realloc fails
             if (new == NULL)
                 halt("ab_append");
 
@@ -42,7 +37,6 @@ void ab_append(AppendBuffer *ab, const char *str, int len) {
             ab->capacity = cap;
         }
 
-        // Append 'str' to buffer
         memcpy(&ab->buffer[ab->bufflen], str, len);
         ab->bufflen += len;
     }

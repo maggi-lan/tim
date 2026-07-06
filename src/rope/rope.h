@@ -9,10 +9,10 @@
 
 
 /*
--> RopeNode represents a node in a binary tree based data structure called rope
--> Ropes are used to implement text buffers
--> Ropes have two types of nodes: internal nodes & leaf nodes
--> Only leaf nodes contain text chunks
+-> RopeNode represents a node in a rope
+-> A rope is a binary tree used as a text buffer
+-> Only leaf nodes store text chunks
+-> Refer https://en.wikipedia.org/wiki/Rope_(data_structure) for more details about ropes
 */
 typedef struct RopeNode {
 	int weight;     // length of text in the left subtree (in internal nodes) or length of text chunk in the node (in leaf nodes)
@@ -24,26 +24,24 @@ typedef struct RopeNode {
 	struct RopeNode *left;
 	struct RopeNode *right;
 	struct RopeNode *parent;
-} RopeNode;
 
-// NOTE: 'weight' helps in indexing while 'total_len' helps to calculate weights
+    // NOTE: 'weight' helps in O(log n) indexing while 'total_len' helps to calculate weights
+} RopeNode;
 
 /*
 # LEAF NODES
-- leaf nodes store the text chunks
 - left = right = NULL
 - str = chunk of text
 - weight = strlen(str)
 
 # INTERNAL NODES
-- internal nodes don't store the text chunks
-- left != NULL and right != NULL
+- at least one child is not NULL
 - str = NULL
 - weight = total length of text in all the leaf nodes from the left subtree
 */
 
 
-// Rope functions
+// Core functions
 RopeNode *create_leaf(const char *text);
 RopeNode *concat(RopeNode *left, RopeNode *right);
 void split(RopeNode *root, int idx, RopeNode **left, RopeNode **right);
