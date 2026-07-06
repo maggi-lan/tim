@@ -51,6 +51,7 @@ int process_keypress(void);
 // Output operations
 void refresh_screen(void);
 void draw_rows(AppendBuffer *ab);
+void draw_row(AppendBuffer *ab, int filerow);
 void scroll(void);
 void draw_status_bar(AppendBuffer *ab);
 void set_status_message(const char *fmt, ...);

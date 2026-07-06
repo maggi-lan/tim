@@ -47,57 +47,11 @@ void refresh_screen(void) {
 */
 void draw_rows(AppendBuffer *ab) {
     for (int line = 0; line < E.screenrows; line++) {
-        ab_append(ab, "\x1b[2K", 4);  // this escape sequence clears current line
+        ab_append(ab, "\x1b[2K", 4);    // clears current line to prevent artifacts from previous content
+        int filerow = line + E.rowoff;  // 0-indexed
 
-        // NOTE: 'line' is zero-indexed and it is the index of a line in the screen
-        // NOTE: 'filerow' is also zero-indexed and it is the index of a line in the file
-        int filerow = line + E.rowoff;
-
-        // Display content
-        if (filerow < E.numlines) {
-            // Fetch entire line
-            int rawlen = get_line_length(E.rope, filerow);
-            char *raw = get_line_segment_from_rope(E.rope, filerow, 0, rawlen);
-
-            // Render into expanded buffer (if tabs are present in the line)
-            if (raw) {
-                int maxlen = MIN((rawlen * TAB_WIDTH) + 1, E.screencols + 1);
-                char *render = calloc(1, maxlen);  // render will only hold characters that will be displayed in screen
-                // Error handling
-                if (!render)
-                    halt("draw_rows");
-
-                int renlen = 0;
-                int rx = 0;
-
-                // Walk through raw line and expand the tabs
-                for (int i = 0; i < rawlen && rx < E.coloff + E.screencols; i++) {
-                    if (raw[i] == '\n')
-                        break;
-
-                    if (raw[i] == '\t') {
-                        int spaces = TAB_WIDTH - (rx % TAB_WIDTH);  // spaces required to reach next tab stop
-                        while (spaces--) {
-                            // Add spaces to 'render' only if it is going to be displayed in the screen
-                            if (rx >= E.coloff && rx < E.coloff + E.screencols)
-                                render[renlen++] = ' ';
-                            rx++;
-                        }
-                    }
-                    else {
-                        // Add characters to 'render' only if it is going to be displayed in the screen
-                        if (rx >= E.coloff && rx < E.coloff + E.screencols)
-                            render[renlen++] = raw[i];
-                        rx++;
-                    }
-                }
-
-                ab_append(ab, render, renlen);
-                free(render);
-                free(raw);
-            }
-        }
-
+        if (filerow < E.numlines)
+            draw_row(ab, filerow);
         else {
             // Display welcome message
             if (E.numlines == 0 && line == (E.screenrows / 3)) {
@@ -129,6 +83,51 @@ void draw_rows(AppendBuffer *ab) {
 
         // Add newline after every row
         ab_append(ab, "\r\n", 2);
+    }
+}
+
+
+/*
+-> Renders a single row (identified by 0-indexed 'filerow') to the screen
+-> Expands tabs to spaces and appends visible portions of the line to an append buffer
+*/
+void draw_row(AppendBuffer *ab, int filerow) {
+    // Entire line is fetched because we need to expand tabs and calculate the rendered length of the line
+    int rawlen = get_line_length(E.rope, filerow);
+    char *raw = get_line_segment_from_rope(E.rope, filerow, 0, rawlen);
+
+    if (raw) {
+        int maxlen = MIN((rawlen * TAB_WIDTH) + 1, E.screencols + 1);
+        char *render = calloc(1, maxlen);  // render will only hold characters that will be displayed in screen
+        if (!render)
+            halt("draw_rows");
+
+        int renlen = 0;
+        int rx = 0;
+
+        for (int i = 0; i < rawlen && rx < E.coloff + E.screencols; i++) {
+            if (raw[i] == '\n')
+                break;
+
+            // Expand tabs
+            if (raw[i] == '\t') {
+                int spaces = TAB_WIDTH - (rx % TAB_WIDTH);  // spaces required to reach next tab stop
+                while (spaces--) {
+                    if (rx >= E.coloff && rx < E.coloff + E.screencols)
+                        render[renlen++] = ' ';
+                    rx++;
+                }
+            }
+            else {
+                if (rx >= E.coloff && rx < E.coloff + E.screencols)
+                    render[renlen++] = raw[i];
+                rx++;
+            }
+        }
+
+        ab_append(ab, render, renlen);
+        free(render);
+        free(raw);
     }
 }
 
