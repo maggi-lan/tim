@@ -22,68 +22,57 @@ RopeNode *create_leaf(const char *text) {
 
 
 /*
--> Combines two subtrees and returns the root of the concatenated subtree
--> NOTE: concat() rebalances just the new concatenated subtree, not the whole tree above it
--> NOTE: don't forget to rebalance the nodes above the concatenated subtree after using concat()
+-> Concatenates two subtrees and returns the root of the new subtree
+-> Rebalances the new concatenated subtree too
 */
 RopeNode *concat(RopeNode *left_subtree, RopeNode *right_subtree) {
-	// Edge cases
 	if (left_subtree == NULL)
 		return right_subtree;
 	if (right_subtree == NULL)
 		return left_subtree;
 
+	RopeNode *concatenated_root = NULL;
 	int skew = node_height(right_subtree) - node_height(left_subtree);
 
-	// CASE-1: There isn't much height difference between the left & right subtrees
-	// Create a new parent node and attach the left & right subtrees as its children
+
+	// CASE-1: There isn't much height difference between left_subtree and right_subtree
 	if (skew >= -1 && skew <= 1) {
-		RopeNode *parent_node = calloc(1, sizeof(RopeNode));
-		// If calloc fails
-		if (parent_node == NULL) {
+		concatenated_root = calloc(1, sizeof(RopeNode));
+		if (concatenated_root == NULL)
 			halt("concat");
-			exit(EXIT_FAILURE);
-		}
 
-		parent_node->left = left_subtree;
-		parent_node->right = right_subtree;
-		update_metadata(parent_node);
+		concatenated_root->left = left_subtree;
+		concatenated_root->right = right_subtree;
 
-		left_subtree->parent = parent_node;
-		right_subtree->parent = parent_node;
+		left_subtree->parent = concatenated_root;
+		right_subtree->parent = concatenated_root;
 
-		return parent_node;
+		update_metadata(concatenated_root);
+		return concatenated_root;
 	}
 
-	// CASE-2: Right subtree is heavier
-    // Attach left_subtree deep in the left spine of right_subtree
-	if (skew >= 2) {
+	// CASE-2: Right subtree is heavier -> attach left_subtree deep in the left spine of right_subtree
+	else if (skew >= 2) {
 		// Recurse down the left spine of right_subtree to find the perfect spot for concatenating (|skew| <= 1)
 		right_subtree->left = concat(left_subtree, right_subtree->left);
-
 		if (right_subtree->left)
 			right_subtree->left->parent = right_subtree;
 
-		update_metadata(right_subtree);
-
-		return rebalance(right_subtree);  // right_subtree = concatenated subtree's root
+		concatenated_root = right_subtree;
 	}
 
-	// CASE-3: Left subtree is heavier
-    // Attach right_subtree deep in the right spine of left_subtree
-	if (skew <= -2) {
+	// CASE-3: Left subtree is heavier -> attach right_subtree deep in the right spine of left_subtree
+	else if (skew <= -2) {
 		// Recurse down the right spine of left_subtree to find the perfect spot for concatenating (|skew| <= 1)
 		left_subtree->right = concat(left_subtree->right, right_subtree);
-
 		if (left_subtree->right)
 			left_subtree->right->parent = left_subtree;
 
-		update_metadata(left_subtree);
-		return rebalance(left_subtree);  // left_subtree = concatenated subtree's root
+		concatenated_root = left_subtree;
 	}
 
-	// concat() should never reach here but this silences warnings
-	return NULL;
+	update_metadata(concatenated_root);
+	return rebalance(concatenated_root);
 }
 
 
