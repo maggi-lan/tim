@@ -155,8 +155,16 @@ void scroll(void) {
 void draw_status_bar(AppendBuffer *ab) {
     ab_append(ab, "\x1b[7m", 4);  // white background, black foreground
 
+    char *mode;
+    if (E.mode == MODE_NORMAL)
+        mode = "NORMAL";
+    else if (E.mode == MODE_INSERT)
+        mode = "INSERT";
+    else if (E.mode == MODE_COMMAND)
+        mode = "COMMAND";
+
     char status[80];
-    int len = snprintf(status, sizeof(status), "%.20s - %d lines", E.filename, E.numlines);
+    int len = snprintf(status, sizeof(status), "  %s  |  %.20s  |  %d lines", mode, E.filename, E.numlines);
 
     if (len > E.screencols)
         len = E.screencols;
@@ -180,7 +188,7 @@ void draw_status_bar(AppendBuffer *ab) {
         }
     }
 
-    ab_append(ab, "\x1b[m", 3);  // reset colors to default
+    ab_append(ab, "\x1b[m", 3);  // resets colors to default
     ab_append(ab, "\r\n", 2);
 }
 

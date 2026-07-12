@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+#include "terminal.h"
+
 
 // Converts a cursor column (cx) on the specified line (0-indexed) to its rendered column (rx)
 int cx_to_rx(int line, int cx) {
@@ -48,4 +50,32 @@ int rx_to_cx(int line, int rx) {
     free(buffer);
 
     return linelen;  // clamp to the end of the line
+}
+
+
+/*
+-> Maps vim navigation keys to other defined keys
+-> Returns the mapped key or the original key if no mapping exists
+*/
+int map_vim_nav_key(int ch) {
+    switch (ch) {
+        case 'h':
+            return ARROW_LEFT;
+        case 'j':
+            return ARROW_DOWN;
+        case 'k':
+            return ARROW_UP;
+        case 'l':
+            return ARROW_RIGHT;
+        case '0':
+            return HOME_KEY;
+        case '$':
+            return END_KEY;
+        case CTRL_PLUS('u'):
+            return PAGE_UP;
+        case CTRL_PLUS('d'):
+            return PAGE_DOWN;
+        default:
+            return ch;
+    }
 }

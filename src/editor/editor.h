@@ -14,6 +14,13 @@
 # define TAB_WIDTH 4
 
 
+// Modes of the editor
+typedef enum EditorMode {
+    MODE_NORMAL,
+    MODE_INSERT,
+    MODE_COMMAND
+} EditorMode;
+
 // Maintains the editor’s runtime data and configuration
 typedef struct EditorState {
     int cx, cy;               // cursor coordinate (0-indexed) -> location of cursor in the file
@@ -27,6 +34,8 @@ typedef struct EditorState {
 
     char statusmsg[80];       // status message to be displayed at the bottom of the screen
     time_t statusmsg_time;    // timestamp of status message
+
+    EditorMode mode;           // current mode of the editor
 
     RopeNode *rope;           // data structure containing the text buffer
     int numlines;             // number of lines in the rope
@@ -47,6 +56,9 @@ extern EditorState E;
 // Input operations
 void move_cursor(int key);
 int process_keypress(void);
+int handle_normal_keypress(int ch);
+int handle_insert_keypress(int ch);
+int handle_command_keypress(int ch);
 
 // Output operations
 void refresh_screen(void);
@@ -67,5 +79,6 @@ void init_editor(RopeNode *root, const char *filename);
 // Helper functions
 int cx_to_rx(int line, int cx);
 int rx_to_cx(int line, int rx);
+int map_vim_nav_key(int ch);
 
 #endif
