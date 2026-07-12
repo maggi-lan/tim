@@ -56,6 +56,9 @@ extern EditorState E;
 // Input operations
 void move_cursor(int key);
 int process_keypress(void);
+int handle_normal_keypress(int ch);
+int handle_insert_keypress(int ch);
+int handle_command_keypress(int ch);
 
 // Output operations
 void refresh_screen(void);

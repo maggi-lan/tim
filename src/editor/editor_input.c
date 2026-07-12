@@ -11,8 +11,8 @@
 void move_cursor(int key) {
     int rowsize =  get_line_length(E.rope, E.cy);
 
+    // NOTE: cursor coordinates stored in 'E' are 0-indexed
     switch (key) {
-        // NOTE: cursor coordinates stored in 'E' are 0-indexed
         case ARROW_LEFT:
             if (E.cx != 0) {
                 // Check the character being crossed (character before the current cursor position) to adjust rx
@@ -30,6 +30,7 @@ void move_cursor(int key) {
                 }
             }
             break;
+
         case ARROW_DOWN:
             if (E.cy != E.numlines - 1) {
                 E.cy++;
@@ -38,6 +39,7 @@ void move_cursor(int key) {
                 E.rx = cx_to_rx(E.cy, E.cx);
             }
             break;
+
         case ARROW_UP:
             if (E.cy != 0) {
                 E.cy--;
@@ -46,6 +48,7 @@ void move_cursor(int key) {
                 E.rx = cx_to_rx(E.cy, E.cx);
             }
             break;
+
         case ARROW_RIGHT:
             if (E.cx < rowsize) {
                 // Check the character being crossed (character at the current cursor position) to adjust rx
@@ -74,6 +77,25 @@ void move_cursor(int key) {
 */
 int process_keypress(void) {
     int ch = read_key();
+
+    switch (E.mode) {
+        case MODE_NORMAL:
+            return handle_normal_keypress(ch);
+        case MODE_INSERT:
+            return handle_insert_keypress(ch);
+        case MODE_COMMAND:
+            return handle_command_keypress(ch);
+    }
+
+    return 0;
+}
+
+/*
+-> Handles keypresses in normal mode
+-> Returns -1 when quit command is called
+-> Returns 0 if everything works properly
+*/
+int handle_normal_keypress(int ch) {
 
     switch (ch) {
         // Quit command
@@ -122,6 +144,38 @@ int process_keypress(void) {
                         move_cursor(ARROW_DOWN);
                 }
             }
+            break;
+
+        // Switch modes
+        case 'i':
+            E.mode = MODE_INSERT;
+            break;
+        case ':':
+            E.mode = MODE_COMMAND;
+            break;
+    }
+
+    return 0;
+}
+
+
+// TODO
+int handle_insert_keypress(int ch) {
+    switch (ch) {
+        case '\x1b':  // Escape key
+            E.mode = MODE_NORMAL;
+            break;
+    }
+
+    return 0;
+}
+
+
+// TODO
+int handle_command_keypress(int ch) {
+    switch (ch) {
+        case '\x1b':  // Escape key
+            E.mode = MODE_NORMAL;
             break;
     }
 
