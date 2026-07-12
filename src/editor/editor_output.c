@@ -53,7 +53,7 @@ void draw_rows(AppendBuffer *ab) {
         int filerow = line + E.rowoff;  // 0-indexed
 
         if (filerow < E.numlines)
-            draw_row(ab, filerow);
+            draw_line(ab, filerow);
         else {
             // Display welcome message
             if (E.numlines == 0 && line == (E.screenrows / 3)) {
@@ -87,10 +87,10 @@ void draw_rows(AppendBuffer *ab) {
 
 
 /*
--> Renders a single row (identified by 0-indexed 'filerow') to the screen
+-> Renders a single row of text (identified by 0-indexed 'filerow') to the screen
 -> Expands tabs to spaces and appends visible portions of the line to an append buffer
 */
-void draw_row(AppendBuffer *ab, int filerow) {
+void draw_line(AppendBuffer *ab, int filerow) {
     // Entire line is fetched because we need to expand tabs and calculate the rendered length of the line
     int rawlen = get_line_length(E.rope, filerow);
     char *raw = get_line_segment_from_rope(E.rope, filerow, 0, rawlen);
@@ -99,7 +99,7 @@ void draw_row(AppendBuffer *ab, int filerow) {
         int maxlen = MIN((rawlen * TAB_WIDTH) + 1, E.screencols + 1);
         char *render = calloc(1, maxlen);  // render will only hold characters that will be displayed in screen
         if (!render)
-            halt("draw_rows");
+            halt("draw_line");
 
         int renlen = 0;
         int rx = 0;
