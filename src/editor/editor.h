@@ -79,5 +79,6 @@ void init_editor(RopeNode *root, const char *filename);
 // Helper functions
 int cx_to_rx(int line, int cx);
 int rx_to_cx(int line, int rx);
+int map_vim_nav_key(int ch);
 
 #endif

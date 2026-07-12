@@ -96,6 +96,7 @@ int process_keypress(void) {
 -> Returns 0 if everything works properly
 */
 int handle_normal_keypress(int ch) {
+    ch = map_vim_nav_key(ch);
 
     switch (ch) {
         // Quit command
