@@ -55,12 +55,8 @@ void draw_rows(AppendBuffer *ab) {
         if (filerow < E.numlines)
             draw_line(ab, filerow);
         else {
-            // Display welcome message
-            if (E.numlines == 0 && line == (E.screenrows / 3)) {
+            if (E.numlines == 0 && line == (E.screenrows / 3))
                 draw_welcome_message(ab);
-            }
-
-            // Display empty lines
             else
                 ab_append(ab, "~", 1);
         }
