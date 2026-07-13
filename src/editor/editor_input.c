@@ -32,7 +32,7 @@ void move_cursor(int key) {
             break;
 
         case ARROW_DOWN:
-            if (E.cy != E.numlines - 1) {
+            if (E.cy != E.numlines - 1 && E.numlines > 0) {
                 E.cy++;
 
                 E.cx = rx_to_cx(E.cy, E.snapx);  // snaps cursor horizontally
