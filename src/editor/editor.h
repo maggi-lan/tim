@@ -64,6 +64,7 @@ int handle_command_keypress(int ch);
 void refresh_screen(void);
 void draw_rows(AppendBuffer *ab);
 void draw_line(AppendBuffer *ab, int filerow);
+void draw_welcome_message(AppendBuffer *ab);
 void scroll(void);
 void draw_status_bar(AppendBuffer *ab);
 void set_status_message(const char *fmt, ...);

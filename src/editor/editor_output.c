@@ -57,22 +57,7 @@ void draw_rows(AppendBuffer *ab) {
         else {
             // Display welcome message
             if (E.numlines == 0 && line == (E.screenrows / 3)) {
-                char welcome[80];
-                int welcomelen = snprintf(welcome, sizeof(welcome),
-                    "TIM (Text vIM) -- version %s", TIM_VERSION);
-
-                if (welcomelen > E.screencols)
-                    welcomelen = E.screencols;
-
-                int padding = (E.screencols - welcomelen) / 2;
-                if (padding) {
-                    ab_append(ab, "~", 1);
-                    padding--;
-                }
-                while (padding--)
-                    ab_append(ab, " ", 1);
-
-                ab_append(ab, welcome, welcomelen);
+                draw_welcome_message(ab);
             }
 
             // Display empty lines
@@ -128,6 +113,31 @@ void draw_line(AppendBuffer *ab, int filerow) {
         free(render);
         free(raw);
     }
+}
+
+
+/*
+-> Renders a welcome message in the middle of the screen when no file is open
+-> It doesn't actually write to STDOUT
+-> It appends all content to the append buffer
+*/
+void draw_welcome_message(AppendBuffer *ab) {
+    char welcome[80];
+    int welcomelen = snprintf(welcome, sizeof(welcome),
+        "TIM (Text vIM) -- version %s", TIM_VERSION);
+
+    if (welcomelen > E.screencols)
+        welcomelen = E.screencols;
+
+    int padding = (E.screencols - welcomelen) / 2;
+    if (padding) {
+        ab_append(ab, "~", 1);
+        padding--;
+    }
+    while (padding--)
+        ab_append(ab, " ", 1);
+
+    ab_append(ab, welcome, welcomelen);
 }
 
 
