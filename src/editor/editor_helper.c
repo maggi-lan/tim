@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "rope.h"
 #include "terminal.h"
 
 
@@ -78,4 +79,10 @@ int map_vim_nav_key(int ch) {
         default:
             return ch;
     }
+}
+
+
+// Returns the index of the character in the rope corresponding to the current cursor position
+int get_rope_idx_from_cursor(void) {
+    return get_line_start(E.rope, E.cy) + E.cx;
 }
