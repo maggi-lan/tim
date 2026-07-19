@@ -90,6 +90,7 @@ int process_keypress(void) {
     return 0;
 }
 
+
 /*
 -> Handles keypresses in normal mode
 -> Returns -1 when quit command is called
