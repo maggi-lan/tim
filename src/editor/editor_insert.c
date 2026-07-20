@@ -35,10 +35,11 @@ void insert_newline_at_cursor(void) {
 
 // Deletes the character before the current cursor position from the rope
 void delete_char_before_cursor(void) {
-    if (E.cx == 0 && E.cy == 0)
+    int total_len = E.rope ? E.rope->total_len : 0;
+    if (total_len == 0)
         return;
 
-    E.rope = delete_at(E.rope, get_rope_idx_from_cursor() - 1, 1);
+    int idx = get_rope_idx_from_cursor();
 
     if (E.cx > 0)
         move_cursor(ARROW_LEFT);
@@ -49,15 +50,38 @@ void delete_char_before_cursor(void) {
         E.snapx = E.rx;
         E.numlines--;
     }
+
+    E.rope = delete_at(E.rope, idx - 1, 1);
 }
 
 
+// Deletes the character at the current cursor position from the rope
 void delete_char_at_cursor(void) {
-    if (E.cx == 0 && E.cy == 0)
+    int total_len = E.rope ? E.rope->total_len : 0;
+    if (total_len == 0)
         return;
 
-    if (get_line_length(E.rope, E.cy) == 0 && E.cy == E.numlines - 1)
+    int idx = get_rope_idx_from_cursor();
+    if (idx >= total_len)
         return;
 
-    E.rope = delete_at(E.rope, get_rope_idx_from_cursor(), 1);
+    int len = get_line_length(E.rope, E.cy);
+
+    if (E.cx == len) {
+        // In normal mode, 'x' does not delete the newline character
+        if (E.mode == MODE_NORMAL)
+            return;
+
+        // In insert mode, DEL deletes the newline character to merge with the next line
+        E.rope = delete_at(E.rope, idx, 1);
+        E.numlines = count_total_lines(E.rope);
+    }
+    else {
+        E.rope = delete_at(E.rope, idx, 1);
+        E.numlines = count_total_lines(E.rope);
+
+        int new_len = get_line_length(E.rope, E.cy);
+        if (E.mode == MODE_NORMAL && E.cx == new_len && E.cx > 0)
+            move_cursor(ARROW_LEFT);
+    }
 }
