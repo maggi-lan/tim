@@ -38,6 +38,8 @@ int escape_parser(void) {
                 switch (seq[1]) {
                     case '1':
                         return HOME_KEY;   // <esc>[1~
+                    case '2':
+                        return INS_KEY;    // <esc>[2~
                     case '3':
                         return DEL_KEY;    // <esc>[3~
                     case '4':

@@ -94,6 +94,7 @@ int process_keypress(void) {
     return 0;
 }
 
+
 /*
 -> Handles keypresses in normal mode
 -> Returns -1 when quit command is called
@@ -161,6 +162,7 @@ int handle_normal_keypress(int ch) {
 
         // Switch modes
         case 'i':
+        case INS_KEY:
             E.mode = MODE_INSERT;
             break;
         case ':':

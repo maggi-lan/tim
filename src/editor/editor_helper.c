@@ -24,6 +24,7 @@ int cx_to_rx(int line, int cx) {
     return rx;
 }
 
+
 /*
 -> Converts a rendered column (rx) on the specified line to its cursor column (cx)
 -> Returns the 'cx' of the end of the line if 'rx' exceeds the rendered width

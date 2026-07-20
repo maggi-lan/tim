@@ -213,6 +213,7 @@ void set_status_message(const char *fmt, ...) {
     E.statusmsg_time = time(NULL);
 }
 
+
 /*
 -> Renders message bar at the bottom of the viewport
 -> It doesn't actually write to STDOUT
