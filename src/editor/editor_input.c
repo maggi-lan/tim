@@ -182,8 +182,7 @@ void handle_insert_keypress(int ch) {
             break;
 
         case '\r':  // Enter key
-            // TODO
-            // insert_newline_at_cursor();
+            insert_newline_at_cursor();
             break;
 
         default:

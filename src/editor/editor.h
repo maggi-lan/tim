@@ -73,6 +73,7 @@ void draw_message_bar(AppendBuffer *ab);
 // Insert mode operations
 void insert_at_cursor(char ch);
 void insert_char_at_cursor(char ch);
+void insert_newline_at_cursor(void);
 
 // Append buffer operations
 void ab_append(AppendBuffer *ab, const char *str, int len);
