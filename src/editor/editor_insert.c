@@ -56,5 +56,8 @@ void delete_char_at_cursor(void) {
     if (E.cx == 0 && E.cy == 0)
         return;
 
+    if (get_line_length(E.rope, E.cy) == 0 && E.cy == E.numlines - 1)
+        return;
+
     E.rope = delete_at(E.rope, get_rope_idx_from_cursor(), 1);
 }
