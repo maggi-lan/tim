@@ -40,6 +40,8 @@ void delete_char_before_cursor(void) {
         return;
 
     int idx = get_rope_idx_from_cursor();
+    if (idx == 0)
+        return;
 
     if (E.cx > 0)
         move_cursor(ARROW_LEFT);
