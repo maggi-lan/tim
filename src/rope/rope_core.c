@@ -123,6 +123,12 @@ void split(RopeNode *node, int idx, RopeNode **left, RopeNode **right) {
 		RopeNode *right_split;  // of the left subtree
 
 		split(node->left, idx, &left_split, &right_split);
+
+        if (node->right)
+            node->right->parent = NULL;
+        if (left_split)
+            left_split->parent = NULL;
+
 		*right = concat(right_split, node->right);
 		*left = left_split;
 	}
@@ -133,6 +139,12 @@ void split(RopeNode *node, int idx, RopeNode **left, RopeNode **right) {
 		RopeNode *right_split;  // of the right subtree
 
 		split(node->right, idx - node->weight, &left_split, &right_split);  // adjust idx relative to the right subtree
+
+        if (node->left)
+            node->left->parent = NULL;
+        if (right_split)
+            right_split->parent = NULL;
+
 		*left = concat(node->left, left_split);
 		*right = right_split;
 	}
