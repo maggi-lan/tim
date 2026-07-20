@@ -136,8 +136,7 @@ int handle_normal_keypress(int ch) {
         // Delete character at cursor
         case 'x':
         case DEL_KEY:
-            // TODO
-            // delete_char_at_cursor();
+            delete_char_at_cursor();
             break;
 
         // Switch modes
@@ -176,8 +175,7 @@ void handle_insert_keypress(int ch) {
             break;
 
         case DEL_KEY:
-            // TODO
-            // delete_char_at_cursor();
+            delete_char_at_cursor();
             break;
 
         case '\r':  // Enter key
