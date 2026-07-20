@@ -21,10 +21,12 @@ cmake --build build
 
 ### TODO
 
-- [ ] modal editing
+- [ ] Command mode (quit/save)
 
 - May add these features in the future...
     - line numbers
     - search feature
     - syntax highlighting
+    - auto indentation
     - undo/redo
+    - more vim keybindings
