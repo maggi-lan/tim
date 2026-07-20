@@ -40,7 +40,9 @@ void move_cursor(int key) {
             break;
 
         case ARROW_RIGHT:
-            if (E.cx < rowsize) {
+            int limit = (E.mode == MODE_INSERT) ? rowsize : rowsize - 1;
+
+            if (E.cx < limit) {
                 E.cx++;
                 E.rx = cx_to_rx(E.cy, E.cx);
                 E.snapx = E.rx;
@@ -130,8 +132,11 @@ int handle_normal_keypress(int ch) {
 
         // Switch modes
         case 'i':
+        case 'a':
         case INS_KEY:
             E.mode = MODE_INSERT;
+            if (ch == 'a')
+                move_cursor(ARROW_RIGHT);
             break;
         case ':':
             E.mode = MODE_COMMAND;
@@ -147,6 +152,7 @@ int handle_insert_keypress(int ch) {
     switch (ch) {
         case '\x1b':  // Escape key
             E.mode = MODE_NORMAL;
+            move_cursor(ARROW_LEFT);
             break;
     }
 
