@@ -30,5 +30,5 @@ void init_editor(RopeNode *root, const char *filename) {
     E.mode = MODE_NORMAL;
 
     E.rope = root;
-    E.numlines = (root == NULL) ? 0 : root->newlines + 1;
+    E.numlines = (root == NULL) ? 1 : root->newlines + 1;
 }
