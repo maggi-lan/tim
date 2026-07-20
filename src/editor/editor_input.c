@@ -15,19 +15,9 @@ void move_cursor(int key) {
     switch (key) {
         case ARROW_LEFT:
             if (E.cx != 0) {
-                // Check the character being crossed (character before the current cursor position) to adjust rx
-                char *seg = get_line_segment_from_rope(E.rope, E.cy, E.cx - 1, 1);
-                if (seg) {
-                    if (seg[0] == '\t')
-                        E.rx -= TAB_WIDTH - (E.rx % TAB_WIDTH);
-                    else
-                        E.rx--;
-
-                    E.cx--;
-                    E.snapx = E.rx;
-
-                    free(seg);
-                }
+                E.cx--;
+                E.rx = cx_to_rx(E.cy, E.cx);
+                E.snapx = E.rx;
             }
             break;
 
@@ -51,19 +41,9 @@ void move_cursor(int key) {
 
         case ARROW_RIGHT:
             if (E.cx < rowsize) {
-                // Check the character being crossed (character at the current cursor position) to adjust rx
-                char *seg = get_line_segment_from_rope(E.rope, E.cy, E.cx, 1);
-                if (seg) {
-                    if (seg[0] == '\t')
-                        E.rx += TAB_WIDTH - (E.rx % TAB_WIDTH);
-                    else
-                        E.rx++;
-
-                    E.cx++;
-                    E.snapx = E.rx;
-
-                    free(seg);
-                }
+                E.cx++;
+                E.rx = cx_to_rx(E.cy, E.cx);
+                E.snapx = E.rx;
             }
             break;
     }
