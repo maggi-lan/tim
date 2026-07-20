@@ -51,7 +51,11 @@ int rx_to_cx(int line, int rx) {
 
     free(buffer);
 
-    return linelen;  // clamp to the end of the line
+    // Clamp to the end of the line
+    if (E.mode == MODE_INSERT)
+        return linelen;
+    else
+        return linelen - 1;
 }
 
 
