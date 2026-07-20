@@ -4,6 +4,7 @@ target_sources(editor
     PRIVATE
         editor_input.c
         editor_output.c
+        editor_insert.c
         editor_buffer.c
         editor_init.c
         editor_helper.c

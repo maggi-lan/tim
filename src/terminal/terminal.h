@@ -6,6 +6,7 @@
 
 // Special values for some keys
 enum SpecialKeys {
+    BACKSPACE = 127,
     ARROW_UP = 1000,
     ARROW_DOWN,
     ARROW_RIGHT,

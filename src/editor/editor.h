@@ -56,8 +56,8 @@ extern EditorState E;
 // Input operations
 void move_cursor(int key);
 int process_keypress(void);
-int handle_normal_keypress(int ch);
-int handle_insert_keypress(int ch);
+int handle_normal_keypress(int ch);  // TODO: return 'void' after moving exit command to command mode
+void handle_insert_keypress(int ch);
 int handle_command_keypress(int ch);
 
 // Output operations
@@ -69,6 +69,10 @@ void scroll(void);
 void draw_status_bar(AppendBuffer *ab);
 void set_status_message(const char *fmt, ...);
 void draw_message_bar(AppendBuffer *ab);
+
+// Insert mode operations
+void insert_at_cursor(char ch);
+void insert_char_at_cursor(char ch);
 
 // Append buffer operations
 void ab_append(AppendBuffer *ab, const char *str, int len);

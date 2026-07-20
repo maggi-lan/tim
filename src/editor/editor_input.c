@@ -80,11 +80,15 @@ int process_keypress(void) {
 
     switch (E.mode) {
         case MODE_NORMAL:
+            // TODO: remove 'return' after moving exit command to command mode
             return handle_normal_keypress(ch);
         case MODE_INSERT:
-            return handle_insert_keypress(ch);
+            handle_insert_keypress(ch);
+            break;
         case MODE_COMMAND:
-            return handle_command_keypress(ch);
+            // TODO: add 'return' after moving exit command to command mode
+            handle_command_keypress(ch);
+            break;
     }
 
     return 0;
@@ -94,6 +98,7 @@ int process_keypress(void) {
 -> Handles keypresses in normal mode
 -> Returns -1 when quit command is called
 -> Returns 0 if everything works properly
+-> TODO: return 'void' after moving exit command to command mode
 */
 int handle_normal_keypress(int ch) {
     ch = map_vim_nav_key(ch);
@@ -147,6 +152,13 @@ int handle_normal_keypress(int ch) {
             }
             break;
 
+        // Delete character at cursor
+        case 'x':
+        case DEL_KEY:
+            // TODO
+            // delete_char_at_cursor();
+            break;
+
         // Switch modes
         case 'i':
             E.mode = MODE_INSERT;
@@ -160,15 +172,44 @@ int handle_normal_keypress(int ch) {
 }
 
 
-// TODO
-int handle_insert_keypress(int ch) {
+// Handles keypresses in insert mode
+void handle_insert_keypress(int ch) {
     switch (ch) {
         case '\x1b':  // Escape key
             E.mode = MODE_NORMAL;
             break;
-    }
 
-    return 0;
+        // Cursor movement
+        case ARROW_LEFT:
+        case ARROW_DOWN:
+        case ARROW_UP:
+        case ARROW_RIGHT:
+            move_cursor(ch);
+            break;
+
+
+        case BACKSPACE:
+        case CTRL_PLUS('h'):
+            // TODO
+            // delete_char_before_cursor();
+            break;
+
+        case DEL_KEY:
+            // TODO
+            // delete_char_at_cursor();
+            break;
+
+        case '\r':  // Enter key
+            // TODO
+            // insert_newline_at_cursor();
+            break;
+
+        default:
+            // Printable characters have ASCII range from 32 to 126
+            if (ch >= 32 && ch <= 126)
+                insert_char_at_cursor(ch);
+            break;
+    }
 }
 
 
