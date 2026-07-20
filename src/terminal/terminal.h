@@ -11,6 +11,7 @@ enum SpecialKeys {
     ARROW_RIGHT,
     ARROW_LEFT,
     DEL_KEY,
+    INS_KEY,
     HOME_KEY,
     END_KEY,
     PAGE_UP,

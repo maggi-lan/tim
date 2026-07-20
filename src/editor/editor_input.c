@@ -150,6 +150,7 @@ int handle_normal_keypress(int ch) {
 
         // Switch modes
         case 'i':
+        case INS_KEY:
             E.mode = MODE_INSERT;
             break;
         case ':':
