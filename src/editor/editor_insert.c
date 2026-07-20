@@ -1,6 +1,7 @@
 #include "editor.h"
 
 #include "rope.h"
+#include "terminal.h"
 
 // Inserts any character at the current cursor position to the rope
 void insert_at_cursor(char ch) {
@@ -11,16 +12,28 @@ void insert_at_cursor(char ch) {
     E.rope = insert_at(E.rope, get_rope_idx_from_cursor(), str);
 }
 
+// Deletes the character before the current cursor position from the rope
+void delete_char_before_cursor(void) {
+    if (E.cx == 0 && E.cy == 0)
+        return;
+
+    E.rope = delete_at(E.rope, get_rope_idx_from_cursor() - 1, 1);
+
+    if (E.cx > 0)
+        move_cursor(ARROW_LEFT);
+    else if (E.cy > 0) {
+        E.cy--;
+        E.cx = get_line_length(E.rope, E.cy);
+        E.rx = cx_to_rx(E.cy, E.cx);
+        E.snapx = E.rx;
+        E.numlines--;
+    }
+}
+
 // Inserts a printable character at the current cursor position
 void insert_char_at_cursor(char ch) {
     insert_at_cursor(ch);
-
-    if (ch == '\t')
-        E.rx += TAB_WIDTH - (E.rx % TAB_WIDTH);
-    else
-        E.rx++;
-    E.cx++;
-    E.snapx = E.rx;
+    move_cursor(ARROW_RIGHT);
 }
 
 // Inserts a newline character at the current cursor position

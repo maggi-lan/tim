@@ -172,8 +172,7 @@ void handle_insert_keypress(int ch) {
 
         case BACKSPACE:
         case CTRL_PLUS('h'):
-            // TODO
-            // delete_char_before_cursor();
+            delete_char_before_cursor();
             break;
 
         case DEL_KEY:
