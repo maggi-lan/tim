@@ -208,7 +208,8 @@ void handle_insert_keypress(int ch) {
 
         default:
             // Printable characters have ASCII range from 32 to 126
-            if (ch >= 32 && ch <= 126)
+            // Allow tab character (ASCII 9) to be inserted as well
+            if ((ch >= 32 && ch <= 126) || ch == '\t')
                 insert_char_at_cursor(ch);
             break;
     }
