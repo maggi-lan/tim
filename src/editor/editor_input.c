@@ -1,7 +1,6 @@
 #include "editor.h"
 
 #include <unistd.h>
-#include <stdlib.h>
 
 #include "terminal.h"
 #include "rope.h"
@@ -87,6 +86,7 @@ int handle_normal_keypress(int ch) {
     ch = map_vim_nav_key(ch);
 
     switch (ch) {
+        // TODO: remove this after moving exit command to command mode
         // Quit command
         case CTRL_PLUS('q'):
             write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
@@ -111,6 +111,7 @@ int handle_normal_keypress(int ch) {
             E.cx =  get_line_length(E.rope, E.cy);
             E.rx = cx_to_rx(E.cy, E.cx);
             E.snapx = E.rx;
+            move_cursor(ARROW_LEFT);
             break;
 
         // Scroll up/down
