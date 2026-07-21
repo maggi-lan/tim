@@ -4,6 +4,7 @@
 
 #include "terminal.h"
 #include "rope.h"
+#include "file_io.h"
 
 
 // Moves cursor position by updating cursor coordinates
@@ -87,7 +88,10 @@ int handle_normal_keypress(int ch) {
 
     switch (ch) {
         // TODO: remove this after moving exit command to command mode
-        // Quit command
+        // Save/Quit command
+        case CTRL_PLUS('s'):
+            save_file(E.rope, E.filename);
+            break;
         case CTRL_PLUS('q'):
             write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
             write(STDOUT_FILENO, "\x1b[H", 3);   // move cursor to top left

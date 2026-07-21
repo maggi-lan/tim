@@ -17,6 +17,7 @@ target_sources(editor
 
 target_link_libraries(editor
     PUBLIC
+        file_io
         rope
         terminal
 )
