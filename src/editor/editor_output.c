@@ -140,7 +140,8 @@ void draw_status_bar(AppendBuffer *ab) {
         mode = "COMMAND";
 
     char status[80];
-    int len = snprintf(status, sizeof(status), "  %s  |  %.20s  |  %d lines", mode, E.filename, E.numlines);
+    int len = snprintf(status, sizeof(status), "  %s  |  %.20s %s  |  %d lines",
+            mode, E.filename, (E.is_dirty) ? "[+]" : "", E.numlines);
 
     if (len > E.screencols)
         len = E.screencols;

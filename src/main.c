@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     enable_raw();
     init_editor(root, filename);
 
-    set_status_message("HELP: Ctrl-Q = quit");
+    set_status_message("HELP: Ctrl-Q = quit | Ctrl-S = save");
 
     while(true) {
         refresh_screen();

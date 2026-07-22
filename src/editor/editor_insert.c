@@ -11,6 +11,7 @@ void insert_at_cursor(char ch) {
     str[1] = '\0';
 
     E.rope = insert_at(E.rope, get_rope_idx_from_cursor(), str);
+    E.is_insert_mode_dirty = true;
 }
 
 
@@ -54,25 +55,29 @@ void delete_char_before_cursor(void) {
     }
 
     E.rope = delete_at(E.rope, idx - 1, 1);
+    E.is_insert_mode_dirty = true;
 }
 
 
-// Deletes the character at the current cursor position from the rope
-void delete_char_at_cursor(void) {
+/*
+-> Deletes the character at the current cursor position from the rope
+-> Returns 'true' if a character was deleted, 'false' otherwise
+*/
+bool delete_char_at_cursor(void) {
     int total_len = E.rope ? E.rope->total_len : 0;
     if (total_len == 0)
-        return;
+        return false;
 
     int idx = get_rope_idx_from_cursor();
     if (idx >= total_len)
-        return;
+        return false;
 
     int len = get_line_length(E.rope, E.cy);
 
     if (E.cx == len) {
         // In normal mode, 'x' does not delete the newline character
         if (E.mode == MODE_NORMAL)
-            return;
+            return false;
 
         // In insert mode, DEL deletes the newline character to merge with the next line
         E.rope = delete_at(E.rope, idx, 1);
@@ -86,4 +91,7 @@ void delete_char_at_cursor(void) {
         if (E.mode == MODE_NORMAL && E.cx == new_len && E.cx > 0)
             move_cursor(ARROW_LEFT);
     }
+
+    E.is_insert_mode_dirty = true;
+    return true;
 }

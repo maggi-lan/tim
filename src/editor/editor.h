@@ -22,22 +22,24 @@ typedef enum EditorMode {
 
 // Maintains the editor’s runtime data and configuration
 typedef struct EditorState {
-    int cx, cy;               // cursor coordinate (0-indexed) -> location of cursor in the file
-    int rx;                   // rendered x-coordinate
-    int snapx;                // rendered x-coordinate to snap back to if possible
-    int screenrows;           // number of visible rows in the screen
-    int screencols;           // number of visible columns in the screen
-    int rowoff;               // row offset (0-indexed)
-    int coloff;               // column offset (0-indexed)
-    char *filename;           // name of the open file
+    int cx, cy;                 // cursor coordinate (0-indexed) -> location of cursor in the file
+    int rx;                     // rendered x-coordinate
+    int snapx;                  // rendered x-coordinate to snap back to if possible
+    int screenrows;             // number of visible rows in the screen
+    int screencols;             // number of visible columns in the screen
+    int rowoff;                 // row offset (0-indexed)
+    int coloff;                 // column offset (0-indexed)
+    char *filename;             // name of the open file
 
-    char statusmsg[80];       // status message to be displayed at the bottom of the screen
-    time_t statusmsg_time;    // timestamp of status message
+    char statusmsg[80];         // status message to be displayed at the bottom of the screen
+    time_t statusmsg_time;      // timestamp of status message
+    bool is_dirty;              // 'true' if the file has unsaved changes
+    bool is_insert_mode_dirty;  // 'true' if insert mode made changes
 
-    EditorMode mode;           // current mode of the editor
+    EditorMode mode;            // current mode of the editor
 
-    RopeNode *rope;           // data structure containing the text buffer
-    int numlines;             // number of lines in the rope
+    RopeNode *rope;             // data structure containing the text buffer
+    int numlines;               // number of lines in the rope
 } EditorState;
 
 // A dynamic string type which supports appending
@@ -73,7 +75,7 @@ void insert_at_cursor(char ch);
 void insert_char_at_cursor(char ch);
 void insert_newline_at_cursor(void);
 void delete_char_before_cursor(void);
-void delete_char_at_cursor(void);
+bool delete_char_at_cursor(void);
 
 // Append buffer operations
 void ab_append(AppendBuffer *ab, const char *str, int len);

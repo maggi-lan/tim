@@ -26,6 +26,8 @@ void init_editor(RopeNode *root, const char *filename) {
 
     E.statusmsg[0] = '\0';
     E.statusmsg_time = 0;
+    E.is_dirty = false;
+    E.is_insert_mode_dirty = false;
 
     E.mode = MODE_NORMAL;
 

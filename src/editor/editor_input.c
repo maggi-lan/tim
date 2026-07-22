@@ -90,7 +90,10 @@ int handle_normal_keypress(int ch) {
         // TODO: remove this after moving exit command to command mode
         // Save/Quit command
         case CTRL_PLUS('s'):
-            save_file(E.rope, E.filename);
+            if (save_file(E.rope, E.filename)) {
+                E.is_dirty = false;
+                E.is_insert_mode_dirty = false;
+            }
             break;
         case CTRL_PLUS('q'):
             write(STDOUT_FILENO, "\x1b[2J", 4);  // clear terminal screen
@@ -143,7 +146,8 @@ int handle_normal_keypress(int ch) {
         // Delete character at cursor
         case 'x':
         case DEL_KEY:
-            delete_char_at_cursor();
+            if (delete_char_at_cursor())
+                E.is_dirty = true;
             break;
 
         // Switch modes
@@ -169,6 +173,10 @@ void handle_insert_keypress(int ch) {
         case '\x1b':  // Escape key
             E.mode = MODE_NORMAL;
             move_cursor(ARROW_LEFT);
+            if (E.is_insert_mode_dirty) {
+                E.is_dirty = true;
+                E.is_insert_mode_dirty = false;
+            }
             break;
 
         // Cursor movement
