@@ -21,7 +21,8 @@ cmake --build build
 
 ### TODO
 
-- [ ] Command mode (quit/save)
+- [ ] command mode (quit/save)
+- [ ] buffered inserts/deletes
 
 - May add these features in the future...
     - line numbers
