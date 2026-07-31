@@ -122,19 +122,13 @@ int get_cursor_pos(int *row, int *col) {
 int get_window_size(int *rows, int *cols) {
     struct winsize ws;
 
-    // NOTE: ioctl() is a system call that retrieves the terminal dimensions
-
-    // CASE-1: ioctl() fails -> use fallback mechanism
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
-        // Move the cursor to bottom right and get the cursor position
-        // NOTE: cursor positions start from 1 and not 0
-        // NOTE: we try to move the cursor to (999, 999) but it clamps to the border if it goes out of bounds
-        if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
+    // NOTE: ioctl() retrieves terminal dimensions here
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {  // ioctl() fails
+        // Fallback mechanism: move the cursor to bottom right and get the cursor position
+        if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)  // moves cursor to (999, 999) but it gets clamped
             return -1;
         return get_cursor_pos(rows, cols);
     }
-
-    // CASE-2: ioctl() works
     else {
         *rows = ws.ws_row;
         *cols = ws.ws_col;
